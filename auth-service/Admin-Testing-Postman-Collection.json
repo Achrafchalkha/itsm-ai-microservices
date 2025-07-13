@@ -1,0 +1,287 @@
+{
+  "info": {
+    "name": "ITSM Admin Testing Collection",
+    "description": "Complete testing collection for ADMIN user endpoints",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8081/api",
+      "type": "string"
+    },
+    {
+      "key": "adminToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "managerToken",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. Admin Login",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    pm.collectionVariables.set('adminToken', response.token);",
+              "    pm.test('Admin login successful', function () {",
+              "        pm.expect(response.token).to.not.be.empty;",
+              "        pm.expect(response.role).to.eql('ADMIN');",
+              "    });",
+              "} else {",
+              "    pm.test('Admin login failed', function () {",
+              "        pm.expect(pm.response.code).to.be.oneOf([400, 401]);",
+              "    });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"admin@itsm.com\",\n  \"password\": \"admin123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "2. Admin Profile",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Admin profile retrieved', function () {",
+              "    pm.response.to.have.status(200);",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.role).to.eql('ADMIN');",
+              "    pm.expect(response.email).to.eql('admin@itsm.com');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "profile"]
+        }
+      }
+    },
+    {
+      "name": "3. Create Manager with Team (Admin Only)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    pm.test('Manager and team created successfully', function () {",
+              "        pm.expect(response.success).to.be.true;",
+              "        pm.expect(response.role).to.eql('MANAGER');",
+              "        pm.expect(response.email).to.eql('manager@itsm.com');",
+              "        pm.expect(response.teamName).to.eql('Support Technique');",
+              "        pm.expect(response.message).to.include('Manager créé avec succès');",
+              "    });",
+              "} else {",
+              "    pm.test('Manager creation failed', function () {",
+              "        pm.expect(pm.response.code).to.be.oneOf([400, 403]);",
+              "    });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{adminToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nom\": \"Dupont\",\n  \"prenom\": \"Jean\",\n  \"email\": \"manager@itsm.com\",\n  \"motDePasse\": \"manager123\",\n  \"teamName\": \"Support Technique\",\n  \"teamDescription\": \"Équipe de support technique niveau 1 et 2\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/admin/createmanager",
+          "host": ["{{baseUrl}}"],
+          "path": ["admin", "createmanager"]
+        }
+      }
+    },
+    {
+      "name": "4. Login as Manager",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 200) {",
+              "    const response = pm.response.json();",
+              "    pm.collectionVariables.set('managerToken', response.token);",
+              "    pm.test('Manager login successful', function () {",
+              "        pm.expect(response.role).to.eql('MANAGER');",
+              "    });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"manager@itsm.com\",\n  \"password\": \"manager123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      }
+    },
+    {
+      "name": "5. Create Technician with Full Profile (Manager)",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "if (pm.response.code === 201) {",
+              "    const response = pm.response.json();",
+              "    pm.test('Technician created successfully with full profile', function () {",
+              "        pm.expect(response.success).to.be.true;",
+              "        pm.expect(response.role).to.eql('TECHNICIEN');",
+              "        pm.expect(response.teamName).to.not.be.empty;",
+              "        pm.expect(response.competences).to.be.an('array');",
+              "        pm.expect(response.localisation).to.not.be.empty;",
+              "        pm.expect(response.message).to.include('Technicien créé avec succès');",
+              "    });",
+              "} else {",
+              "    pm.test('Technician creation failed', function () {",
+              "        pm.expect(pm.response.code).to.be.oneOf([400, 403]);",
+              "    });",
+              "}"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{managerToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"nom\": \"Technicien\",\n  \"prenom\": \"Expert\",\n  \"email\": \"tech.expert@itsm.com\",\n  \"motDePasse\": \"tech123\",\n  \"localisation\": \"Paris - Bureau 2A\",\n  \"telephone\": \"+33 1 23 45 67 89\",\n  \"specialite\": \"Développement Full-Stack\",\n  \"competences\": [\n    {\n      \"nom\": \"Java\",\n      \"description\": \"Développement Java Spring Boot\",\n      \"categorie\": \"DEVELOPPEMENT\",\n      \"niveau\": \"EXPERT\"\n    },\n    {\n      \"nom\": \"React\",\n      \"description\": \"Développement frontend React\",\n      \"categorie\": \"FRONTEND\",\n      \"niveau\": \"INTERMEDIAIRE\"\n    }\n  ]\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/manager/createtechnician",
+          "host": ["{{baseUrl}}"],
+          "path": ["manager", "createtechnician"]
+        }
+      }
+    },
+    {
+      "name": "6. Test Unauthorized Access",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Unauthorized access blocked', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/user/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "profile"]
+        }
+      }
+    },
+    {
+      "name": "7. Test Invalid Token",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Invalid token rejected', function () {",
+              "    pm.expect(pm.response.code).to.be.oneOf([401, 403]);",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer invalid-token-here"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/user/profile",
+          "host": ["{{baseUrl}}"],
+          "path": ["user", "profile"]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,252 @@
+{
+	"info": {
+		"name": "ITSM Platform - Complete API Testing",
+		"description": "Complete API collection for testing Auth Service and User Service with hierarchical workflow",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "http://localhost:8082",
+			"type": "string"
+		},
+		{
+			"key": "authToken",
+			"value": "",
+			"type": "string"
+		}
+	],
+	"item": [
+		{
+			"name": "Health Check",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "{{baseUrl}}/actuator/health",
+					"host": ["{{baseUrl}}"],
+					"path": ["actuator", "health"]
+				}
+			}
+		},
+		{
+			"name": "Get User Profile",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/users/550e8400-e29b-41d4-a716-446655440001",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "users", "550e8400-e29b-41d4-a716-446655440001"]
+				}
+			}
+		},
+		{
+			"name": "Update User Profile",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nom\": \"Dupont\",\n  \"prenom\": \"Jean\",\n  \"localisation\": \"Paris - La Défense\",\n  \"statutTechnicien\": \"DISPONIBLE\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/users/550e8400-e29b-41d4-a716-446655440001",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "users", "550e8400-e29b-41d4-a716-446655440001"]
+				}
+			}
+		},
+		{
+			"name": "Add Competence",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"nom\": \"Docker\",\n  \"description\": \"Containerization and orchestration\",\n  \"categorie\": \"DevOps\",\n  \"niveau\": \"SENIOR\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/users/550e8400-e29b-41d4-a716-446655440001/competences",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "users", "550e8400-e29b-41d4-a716-446655440001", "competences"]
+				}
+			}
+		},
+		{
+			"name": "Get Available Technicians",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/technicians/available",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "technicians", "available"]
+				}
+			}
+		},
+		{
+			"name": "Search Technicians by Skill",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/technicians/available?skill=Réseau&level=3",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "technicians", "available"],
+					"query": [
+						{
+							"key": "skill",
+							"value": "Réseau"
+						},
+						{
+							"key": "level",
+							"value": "3"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Find Best Technician",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/technicians/best-match?skill=Windows&level=3&location=Paris",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "technicians", "best-match"],
+					"query": [
+						{
+							"key": "skill",
+							"value": "Windows"
+						},
+						{
+							"key": "level",
+							"value": "3"
+						},
+						{
+							"key": "location",
+							"value": "Paris"
+						}
+					]
+				}
+			}
+		},
+		{
+			"name": "Search Technicians (POST)",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					},
+					{
+						"key": "Content-Type",
+						"value": "application/json",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\n  \"competence\": \"Linux\",\n  \"niveauMinimum\": 3,\n  \"localisation\": \"Lyon\",\n  \"statut\": \"DISPONIBLE\"\n}"
+				},
+				"url": {
+					"raw": "{{baseUrl}}/api/technicians/search",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "technicians", "search"]
+				}
+			}
+		},
+		{
+			"name": "Get Availability Statistics",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/technicians/stats/availability",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "technicians", "stats", "availability"]
+				}
+			}
+		},
+		{
+			"name": "Change Technician Status",
+			"request": {
+				"method": "PUT",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer {{authToken}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{baseUrl}}/api/users/550e8400-e29b-41d4-a716-446655440001/status?status=OCCUPE",
+					"host": ["{{baseUrl}}"],
+					"path": ["api", "users", "550e8400-e29b-41d4-a716-446655440001", "status"],
+					"query": [
+						{
+							"key": "status",
+							"value": "OCCUPE"
+						}
+					]
+				}
+			}
+		}
+	]
+}

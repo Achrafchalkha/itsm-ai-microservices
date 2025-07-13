@@ -1,0 +1,67 @@
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# Maven
+target/
+pom.xml.tag
+pom.xml.releaseBackup
+pom.xml.versionsBackup
+pom.xml.next
+release.properties
+dependency-reduced-pom.xml
+buildNumber.properties
+.mvn/timing.properties
+.mvn/wrapper/maven-wrapper.jar
+
+# IDE
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+.settings/
+.project
+.classpath
+.factorypath
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment variables and sensitive data
+.env
+.env.local
+.env.production
+application-local.properties
+application-dev.properties
+application-prod.properties
+
+# Docker volumes and data
+auth-service/kafka-data/
+auth-service/zookeeper-data/
+docker-data/
+
+# Temporary files
+*.tmp
+*.temp
+*.swp
+*.swo
+
+# Database files
+*.db
+*.sqlite
+
+# Security and credentials
+secrets/
+credentials/
+*.key
+*.pem
+*.p12
+*.jks
+
+# Application specific
+logs/
+data/
