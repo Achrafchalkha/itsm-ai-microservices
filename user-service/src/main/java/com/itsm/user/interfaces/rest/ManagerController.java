@@ -136,6 +136,7 @@ public class ManagerController {
                 .localisation(utilisateur.getLocalisation())
                 .telephone(utilisateur.getTelephone())
                 .specialite(utilisateur.getSpecialite())
+                .chargeActuelle(utilisateur.getChargeActuelle())
                 .dateCreation(utilisateur.getDateCreation())
                 .dateModification(utilisateur.getDateModification())
                 .actif(utilisateur.isActif())

@@ -80,6 +80,7 @@ public class TechnicianService {
                 .telephone(request.getTelephone())
                 .specialite(request.getSpecialite())
                 .competencesJson(competencesJson)
+                .chargeActuelle(0)  // New technicians start with 0 tickets
                 .dateCreation(LocalDateTime.now())
                 .dateModification(LocalDateTime.now())
                 .actif(true)

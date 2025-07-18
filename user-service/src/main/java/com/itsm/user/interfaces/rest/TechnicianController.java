@@ -162,6 +162,8 @@ public class TechnicianController {
                 .localisation(utilisateur.getLocalisation())
                 .telephone(utilisateur.getTelephone())
                 .specialite(utilisateur.getSpecialite())
+                .competencesJson(utilisateur.getCompetencesJson())
+                .chargeActuelle(utilisateur.getChargeActuelle())
                 .dateCreation(utilisateur.getDateCreation())
                 .dateModification(utilisateur.getDateModification())
                 .actif(utilisateur.isActif())

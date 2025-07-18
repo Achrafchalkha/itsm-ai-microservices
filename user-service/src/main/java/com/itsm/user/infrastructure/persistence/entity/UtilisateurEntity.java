@@ -56,7 +56,11 @@ public class UtilisateurEntity {
     
     @Column(name = "competences_json", columnDefinition = "TEXT")
     private String competencesJson;
-    
+
+    @Column(name = "charge_actuelle", nullable = false)
+    @Builder.Default
+    private Integer chargeActuelle = 0;  // Number of active tickets assigned to technician
+
     @CreationTimestamp
     @Column(name = "date_creation", nullable = false, updatable = false)
     private LocalDateTime dateCreation;

@@ -28,6 +28,7 @@ public class UtilisateurDto {
     private String telephone;
     private String specialite;
     private String competencesJson;
+    private Integer chargeActuelle;
     private LocalDateTime dateCreation;
     private LocalDateTime dateModification;
     private boolean actif;

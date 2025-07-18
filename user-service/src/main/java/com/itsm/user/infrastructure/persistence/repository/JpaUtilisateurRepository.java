@@ -3,6 +3,7 @@ package com.itsm.user.infrastructure.persistence.repository;
 import com.itsm.user.domain.model.Role;
 import com.itsm.user.infrastructure.persistence.entity.UtilisateurEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -43,4 +44,29 @@ public interface JpaUtilisateurRepository extends JpaRepository<UtilisateurEntit
     
     @Query("SELECT COUNT(u) FROM UtilisateurEntity u WHERE u.teamId = :teamId")
     long countByTeamId(@Param("teamId") UUID teamId);
+
+    /**
+     * Find technicians by team ordered by workload (least loaded first)
+     */
+    @Query("SELECT u FROM UtilisateurEntity u WHERE u.teamId = :teamId AND u.role = 'TECHNICIEN' AND u.actif = true ORDER BY u.chargeActuelle ASC")
+    List<UtilisateurEntity> findTechniciansByTeamOrderByWorkload(@Param("teamId") UUID teamId);
+
+    /**
+     * Find available technicians (active with low workload)
+     */
+    @Query("SELECT u FROM UtilisateurEntity u WHERE u.role = 'TECHNICIEN' AND u.actif = true AND u.chargeActuelle < :maxWorkload ORDER BY u.chargeActuelle ASC")
+    List<UtilisateurEntity> findAvailableTechnicians(@Param("maxWorkload") int maxWorkload);
+
+    /**
+     * Find technicians with specific competence and low workload
+     */
+    @Query("SELECT u FROM UtilisateurEntity u WHERE u.role = 'TECHNICIEN' AND u.actif = true AND u.competencesJson LIKE %:competence% ORDER BY u.chargeActuelle ASC")
+    List<UtilisateurEntity> findTechniciansByCompetenceOrderByWorkload(@Param("competence") String competence);
+
+    /**
+     * Update workload for a technician
+     */
+    @Modifying
+    @Query("UPDATE UtilisateurEntity u SET u.chargeActuelle = :workload, u.dateModification = CURRENT_TIMESTAMP WHERE u.id = :technicianId")
+    void updateWorkload(@Param("technicianId") UUID technicianId, @Param("workload") int workload);
 }

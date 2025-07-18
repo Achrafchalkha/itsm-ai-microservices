@@ -28,6 +28,7 @@ public class Utilisateur {
     private String telephone;
     private String specialite;
     private String competencesJson;     // JSON storage for competencies
+    private Integer chargeActuelle;     // Number of active tickets assigned (for assignment-service)
     private LocalDateTime dateCreation;
     private LocalDateTime dateModification;
     private boolean actif;
@@ -45,6 +46,7 @@ public class Utilisateur {
                 .localisation(localisation)
                 .telephone(telephone)
                 .specialite(specialite)
+                .chargeActuelle(0)  // Managers don't handle tickets directly
                 .dateCreation(LocalDateTime.now())
                 .dateModification(LocalDateTime.now())
                 .actif(true)
@@ -66,6 +68,7 @@ public class Utilisateur {
                 .telephone(telephone)
                 .specialite(specialite)
                 .competencesJson(competencesJson)
+                .chargeActuelle(0)  // New technicians start with 0 tickets
                 .dateCreation(LocalDateTime.now())
                 .dateModification(LocalDateTime.now())
                 .actif(true)
@@ -109,5 +112,61 @@ public class Utilisateur {
     public void activer() {
         this.actif = true;
         mettreAJour();
+    }
+
+    /**
+     * Increment workload (when ticket is assigned)
+     */
+    public void incrementerCharge() {
+        if (this.chargeActuelle == null) {
+            this.chargeActuelle = 0;
+        }
+        this.chargeActuelle++;
+        mettreAJour();
+    }
+
+    /**
+     * Decrement workload (when ticket is completed/closed)
+     */
+    public void decrementerCharge() {
+        if (this.chargeActuelle == null) {
+            this.chargeActuelle = 0;
+        }
+        if (this.chargeActuelle > 0) {
+            this.chargeActuelle--;
+        }
+        mettreAJour();
+    }
+
+    /**
+     * Set workload to specific value
+     */
+    public void definirCharge(int charge) {
+        this.chargeActuelle = Math.max(0, charge);  // Ensure non-negative
+        mettreAJour();
+    }
+
+    /**
+     * Check if technician is available (active and low workload)
+     */
+    public boolean estDisponible() {
+        return this.actif && (this.chargeActuelle == null || this.chargeActuelle < 10);  // Max 10 tickets
+    }
+
+    /**
+     * Get workload level description
+     */
+    public String getNiveauCharge() {
+        if (this.chargeActuelle == null || this.chargeActuelle == 0) {
+            return "LIBRE";
+        } else if (this.chargeActuelle <= 3) {
+            return "FAIBLE";
+        } else if (this.chargeActuelle <= 7) {
+            return "MODERE";
+        } else if (this.chargeActuelle <= 10) {
+            return "ELEVE";
+        } else {
+            return "SATURE";
+        }
     }
 }

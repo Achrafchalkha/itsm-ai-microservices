@@ -58,6 +58,7 @@ public class ManagerService {
                 .localisation(request.getLocalisation())
                 .telephone(request.getTelephone())
                 .specialite(request.getSpecialite())
+                .chargeActuelle(0)  // Managers don't handle tickets directly
                 .dateCreation(LocalDateTime.now())
                 .dateModification(LocalDateTime.now())
                 .actif(true)
