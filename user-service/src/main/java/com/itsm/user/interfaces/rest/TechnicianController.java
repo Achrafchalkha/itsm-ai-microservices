@@ -4,7 +4,9 @@ import com.itsm.user.application.service.TechnicianService;
 import com.itsm.user.domain.model.Utilisateur;
 import com.itsm.user.interfaces.dto.CreateTechnicianRequest;
 import com.itsm.user.interfaces.dto.CreateTechnicianResponse;
+import com.itsm.user.interfaces.dto.UpdateTechnicianRequest;
 import com.itsm.user.interfaces.dto.UtilisateurDto;
+import com.itsm.user.infrastructure.security.SecurityService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -28,16 +30,23 @@ import java.util.stream.Collectors;
 public class TechnicianController {
 
     private final TechnicianService technicianService;
+    private final SecurityService securityService;
 
     /**
-     * Create a new technician (MANAGER only)
+     * Create a new technician (MANAGER only) - assigns to manager's team
      */
     @PostMapping
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<CreateTechnicianResponse> createTechnician(@Valid @RequestBody CreateTechnicianRequest request) {
         log.info("Creating technician: {}", request.getEmail());
-        
-        CreateTechnicianResponse response = technicianService.createTechnician(request);
+
+        // Get current manager ID from security context
+        UUID managerId = securityService.getCurrentUserId();
+        if (managerId == null) {
+            throw new IllegalArgumentException("Manager ID non trouvé dans le contexte de sécurité");
+        }
+
+        CreateTechnicianResponse response = technicianService.createTechnician(request, managerId);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -70,16 +79,16 @@ public class TechnicianController {
     }
 
     /**
-     * Update technician (ADMIN, MANAGER, or own profile)
+     * Update technician (MANAGER only) - supports all fields including password
      */
     @PutMapping("/{technicianId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or (hasRole('TECHNICIAN') and @securityService.isCurrentUser(#technicianId))")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<UtilisateurDto> updateTechnician(
             @PathVariable UUID technicianId,
-            @Valid @RequestBody UtilisateurDto technicianDto) {
-        log.info("Updating technician: {}", technicianId);
-        
-        Utilisateur updatedTechnician = technicianService.updateTechnician(technicianId, fromDto(technicianDto));
+            @Valid @RequestBody UpdateTechnicianRequest request) {
+        log.info("Updating technician: {} by MANAGER", technicianId);
+
+        Utilisateur updatedTechnician = technicianService.updateTechnician(technicianId, request);
         return ResponseEntity.ok(toDto(updatedTechnician));
     }
 

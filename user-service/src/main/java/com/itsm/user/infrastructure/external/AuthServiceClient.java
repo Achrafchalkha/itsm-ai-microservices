@@ -132,6 +132,42 @@ public class AuthServiceClient {
     }
 
     /**
+     * Async call to update technician authentication in auth-service
+     * Updates auth_db.utilisateurs with same ID
+     */
+    @Async
+    public void updateTechnicianAuth(Utilisateur technician, String newPassword, boolean emailChanged, boolean passwordChanged) {
+        try {
+            log.info("Updating technician authentication in auth-service with ID: {} for: {}",
+                    technician.getId(), technician.getEmail());
+
+            Map<String, Object> request = new HashMap<>();
+            request.put("id", technician.getId().toString());
+            request.put("nom", technician.getNom());
+            request.put("prenom", technician.getPrenom());
+            request.put("email", technician.getEmail());
+            request.put("role", technician.getRole().name());
+            request.put("emailChanged", emailChanged);
+            request.put("passwordChanged", passwordChanged);
+
+            if (passwordChanged && newPassword != null) {
+                request.put("newPassword", newPassword);
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+
+            String url = authServiceUrl + "/api/auth/sync/update-user";
+            restTemplate.postForEntity(url, entity, String.class);
+
+            log.info("Technician authentication updated successfully in auth-service: {}", technician.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to update technician authentication in auth-service: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
      * Async call to disable user authentication in auth-service
      */
     @Async

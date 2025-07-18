@@ -4,8 +4,11 @@ import com.itsm.user.domain.model.Role;
 import com.itsm.user.domain.model.Utilisateur;
 import com.itsm.user.domain.repository.UtilisateurRepository;
 import com.itsm.user.infrastructure.external.AuthServiceClient;
+import com.itsm.user.interfaces.dto.CompetenceDto;
 import com.itsm.user.interfaces.dto.CreateTechnicianRequest;
 import com.itsm.user.interfaces.dto.CreateTechnicianResponse;
+import com.itsm.user.interfaces.dto.UpdateTechnicianRequest;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -27,43 +30,68 @@ public class TechnicianService {
 
     private final UtilisateurRepository utilisateurRepository;
     private final AuthServiceClient authServiceClient;
+    private final ObjectMapper objectMapper;
 
     /**
-     * Create a new technician with async auth-service integration
+     * Create a new technician with dual database synchronization
+     * Manager creates technician for their own team
+     * Saves to both user_db.utilisateurs and auth_db.utilisateurs with SAME ID
      */
     @Transactional
-    public CreateTechnicianResponse createTechnician(CreateTechnicianRequest request) {
-        log.info("Creating technician: {}", request.getEmail());
+    public CreateTechnicianResponse createTechnician(CreateTechnicianRequest request, UUID managerId) {
+        log.info("Creating technician: {} by manager: {}", request.getEmail(), managerId);
 
         // Check if user already exists
         if (utilisateurRepository.existsByEmail(request.getEmail())) {
             throw new IllegalArgumentException("Un utilisateur avec cet email existe déjà: " + request.getEmail());
         }
 
-        // Create technician profile in user-service
+        // Get manager's team ID
+        Utilisateur manager = utilisateurRepository.findById(managerId)
+                .orElseThrow(() -> new IllegalArgumentException("Manager non trouvé: " + managerId));
+
+        if (manager.getTeamId() == null) {
+            throw new IllegalArgumentException("Le manager n'a pas d'équipe assignée");
+        }
+
+        // Generate UUID that will be used in BOTH databases
+        UUID technicianId = UUID.randomUUID();
+
+        // Convert competences to JSON
+        String competencesJson = null;
+        if (request.getCompetences() != null && !request.getCompetences().isEmpty()) {
+            try {
+                competencesJson = objectMapper.writeValueAsString(request.getCompetences());
+            } catch (Exception e) {
+                log.error("Failed to serialize competences: {}", e.getMessage());
+                competencesJson = "[]";
+            }
+        }
+
+        // Create technician profile in user-service (user_db.utilisateurs)
         Utilisateur technician = Utilisateur.builder()
-                .id(UUID.randomUUID())
+                .id(technicianId)  // Same ID for both databases
                 .nom(request.getNom())
                 .prenom(request.getPrenom())
                 .email(request.getEmail())
                 .role(Role.TECHNICIEN)
-                .teamId(request.getTeamId())
+                .teamId(manager.getTeamId())  // Assign to manager's team
                 .localisation(request.getLocalisation())
                 .telephone(request.getTelephone())
                 .specialite(request.getSpecialite())
-                .competencesJson(request.getCompetencesJson())
+                .competencesJson(competencesJson)
                 .dateCreation(LocalDateTime.now())
                 .dateModification(LocalDateTime.now())
                 .actif(true)
                 .build();
 
         Utilisateur savedTechnician = utilisateurRepository.save(technician);
-        log.info("Technician profile created in user-service: {}", savedTechnician.getId());
+        log.info("Technician profile created in user_db with ID: {}", savedTechnician.getId());
 
-        // Async call to auth-service to create authentication credentials
+        // Sync to auth-service (auth_db.utilisateurs) with SAME ID
         try {
-            authServiceClient.createTechnicianAuth(savedTechnician, request.getPassword());
-            log.info("Technician authentication created in auth-service: {}", savedTechnician.getEmail());
+            authServiceClient.createTechnicianAuth(savedTechnician, request.getMotDePasse());
+            log.info("Technician authentication created in auth_db with same ID: {}", savedTechnician.getId());
         } catch (Exception e) {
             log.error("Failed to create technician authentication in auth-service: {}", e.getMessage());
             // Don't rollback - the profile is created, auth can be created later
@@ -76,7 +104,7 @@ public class TechnicianService {
                 .prenom(savedTechnician.getPrenom())
                 .role(savedTechnician.getRole())
                 .teamId(savedTechnician.getTeamId())
-                .message("Technicien créé avec succès")
+                .message("Technicien créé avec succès dans les deux bases de données")
                 .build();
     }
 
@@ -101,24 +129,89 @@ public class TechnicianService {
     }
 
     /**
-     * Update technician
+     * Update technician with dual database synchronization
+     * Updates both user_db.utilisateurs and auth_db.utilisateurs
      */
     @Transactional
-    public Utilisateur updateTechnician(UUID technicianId, Utilisateur updatedTechnician) {
+    public Utilisateur updateTechnician(UUID technicianId, UpdateTechnicianRequest request) {
         log.info("Updating technician: {}", technicianId);
 
         Utilisateur existingTechnician = getTechnicianById(technicianId);
-        
-        // Update allowed fields
-        existingTechnician.setNom(updatedTechnician.getNom());
-        existingTechnician.setPrenom(updatedTechnician.getPrenom());
-        existingTechnician.setLocalisation(updatedTechnician.getLocalisation());
-        existingTechnician.setTelephone(updatedTechnician.getTelephone());
-        existingTechnician.setSpecialite(updatedTechnician.getSpecialite());
-        existingTechnician.setCompetencesJson(updatedTechnician.getCompetencesJson());
-        existingTechnician.setDateModification(LocalDateTime.now());
+        boolean hasChanges = false;
+        boolean emailChanged = false;
+        boolean passwordChanged = false;
 
-        return utilisateurRepository.save(existingTechnician);
+        // Update user-service fields (user_db.utilisateurs)
+        if (request.getNom() != null && !request.getNom().equals(existingTechnician.getNom())) {
+            existingTechnician.setNom(request.getNom());
+            hasChanges = true;
+        }
+
+        if (request.getPrenom() != null && !request.getPrenom().equals(existingTechnician.getPrenom())) {
+            existingTechnician.setPrenom(request.getPrenom());
+            hasChanges = true;
+        }
+
+        if (request.getEmail() != null && !request.getEmail().equals(existingTechnician.getEmail())) {
+            // Check if new email already exists
+            if (utilisateurRepository.existsByEmail(request.getEmail())) {
+                throw new IllegalArgumentException("Un utilisateur avec cet email existe déjà: " + request.getEmail());
+            }
+            existingTechnician.setEmail(request.getEmail());
+            emailChanged = true;
+            hasChanges = true;
+        }
+
+        if (request.getLocalisation() != null) {
+            existingTechnician.setLocalisation(request.getLocalisation());
+            hasChanges = true;
+        }
+
+        if (request.getTelephone() != null) {
+            existingTechnician.setTelephone(request.getTelephone());
+            hasChanges = true;
+        }
+
+        if (request.getSpecialite() != null) {
+            existingTechnician.setSpecialite(request.getSpecialite());
+            hasChanges = true;
+        }
+
+        // Update competences
+        if (request.getCompetences() != null) {
+            try {
+                String competencesJson = objectMapper.writeValueAsString(request.getCompetences());
+                existingTechnician.setCompetencesJson(competencesJson);
+                hasChanges = true;
+            } catch (Exception e) {
+                log.error("Failed to serialize competences: {}", e.getMessage());
+            }
+        }
+
+        if (request.getMotDePasse() != null && !request.getMotDePasse().trim().isEmpty()) {
+            passwordChanged = true;
+            hasChanges = true;
+        }
+
+        if (hasChanges) {
+            existingTechnician.setDateModification(LocalDateTime.now());
+            existingTechnician = utilisateurRepository.save(existingTechnician);
+            log.info("Technician updated in user_db: {}", technicianId);
+        }
+
+        // Sync changes to auth-service (auth_db.utilisateurs)
+        if (hasChanges) {
+            try {
+                authServiceClient.updateTechnicianAuth(existingTechnician, request.getMotDePasse(),
+                        emailChanged, passwordChanged);
+                log.info("Technician authentication updated in auth_db: {}", technicianId);
+            } catch (Exception e) {
+                log.error("Failed to update technician authentication in auth-service: {}", e.getMessage());
+                // Don't rollback - the profile is updated, auth can be synced later
+            }
+        }
+
+        return existingTechnician;
     }
 
     /**
