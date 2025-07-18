@@ -69,7 +69,7 @@ public class AdminController {
     }
 
     @PostMapping("/createmanager")
-    // @PreAuthorize("hasRole('ADMIN')") // Temporarily disabled for testing
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<CreateManagerResponse> createManager(@Valid @RequestBody CreateManagerRequest request) {
         try {
             Authentication auth = SecurityContextHolder.getContext().getAuthentication();
