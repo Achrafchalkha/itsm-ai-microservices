@@ -4,6 +4,7 @@ import com.itsm.user.application.service.ManagerService;
 import com.itsm.user.domain.model.Utilisateur;
 import com.itsm.user.interfaces.dto.CreateManagerRequest;
 import com.itsm.user.interfaces.dto.CreateManagerResponse;
+import com.itsm.user.interfaces.dto.UpdateManagerRequest;
 import com.itsm.user.interfaces.dto.UtilisateurDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -70,16 +71,16 @@ public class ManagerController {
     }
 
     /**
-     * Update manager (ADMIN or own profile)
+     * Update manager (ADMIN only) - supports all fields including password
      */
     @PutMapping("/{managerId}")
-    @PreAuthorize("hasRole('ADMIN') or (hasRole('MANAGER') and @securityService.isCurrentUser(#managerId))")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UtilisateurDto> updateManager(
             @PathVariable UUID managerId,
-            @Valid @RequestBody UtilisateurDto managerDto) {
-        log.info("Updating manager: {}", managerId);
-        
-        Utilisateur updatedManager = managerService.updateManager(managerId, fromDto(managerDto));
+            @Valid @RequestBody UpdateManagerRequest request) {
+        log.info("Updating manager: {} by ADMIN", managerId);
+
+        Utilisateur updatedManager = managerService.updateManager(managerId, request);
         return ResponseEntity.ok(toDto(updatedManager));
     }
 

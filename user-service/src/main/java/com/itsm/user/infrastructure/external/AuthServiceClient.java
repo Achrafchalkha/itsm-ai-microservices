@@ -30,14 +30,16 @@ public class AuthServiceClient {
 
     /**
      * Async call to create manager authentication in auth-service
+     * IMPORTANT: Uses the SAME ID as created in user-service
      */
     @Async
     public void createManagerAuth(Utilisateur manager, String password, String teamName, String teamDescription) {
         try {
-            log.info("Creating manager authentication in auth-service for: {}", manager.getEmail());
+            log.info("Creating manager authentication in auth-service with ID: {} for: {}",
+                    manager.getId(), manager.getEmail());
 
             Map<String, Object> request = new HashMap<>();
-            request.put("id", manager.getId());
+            request.put("id", manager.getId().toString());  // Ensure same ID
             request.put("nom", manager.getNom());
             request.put("prenom", manager.getPrenom());
             request.put("email", manager.getEmail());
@@ -50,10 +52,11 @@ public class AuthServiceClient {
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
-            String url = authServiceUrl + "/api/auth/sync/manager";
+            String url = authServiceUrl + "/api/auth/sync/create-user";
             restTemplate.postForEntity(url, entity, String.class);
 
-            log.info("Manager authentication created successfully in auth-service: {}", manager.getEmail());
+            log.info("Manager authentication created successfully in auth-service with same ID: {} for: {}",
+                    manager.getId(), manager.getEmail());
         } catch (Exception e) {
             log.error("Failed to create manager authentication in auth-service: {}", e.getMessage(), e);
         }
@@ -61,31 +64,70 @@ public class AuthServiceClient {
 
     /**
      * Async call to create technician authentication in auth-service
+     * IMPORTANT: Uses the SAME ID as created in user-service
      */
     @Async
     public void createTechnicianAuth(Utilisateur technician, String password) {
         try {
-            log.info("Creating technician authentication in auth-service for: {}", technician.getEmail());
+            log.info("Creating technician authentication in auth-service with ID: {} for: {}",
+                    technician.getId(), technician.getEmail());
 
             Map<String, Object> request = new HashMap<>();
-            request.put("id", technician.getId());
+            request.put("id", technician.getId().toString());  // Ensure same ID
             request.put("nom", technician.getNom());
             request.put("prenom", technician.getPrenom());
             request.put("email", technician.getEmail());
             request.put("password", password);
             request.put("role", technician.getRole().name());
-            request.put("teamId", technician.getTeamId());
+            request.put("teamId", technician.getTeamId() != null ? technician.getTeamId().toString() : null);
 
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
-            String url = authServiceUrl + "/api/auth/sync/technician";
+            String url = authServiceUrl + "/api/auth/sync/create-user";
             restTemplate.postForEntity(url, entity, String.class);
 
-            log.info("Technician authentication created successfully in auth-service: {}", technician.getEmail());
+            log.info("Technician authentication created successfully in auth-service with same ID: {} for: {}",
+                    technician.getId(), technician.getEmail());
         } catch (Exception e) {
             log.error("Failed to create technician authentication in auth-service: {}", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Async call to update manager authentication in auth-service
+     * Updates auth_db.utilisateurs with same ID
+     */
+    @Async
+    public void updateManagerAuth(Utilisateur manager, String newPassword, boolean emailChanged, boolean passwordChanged) {
+        try {
+            log.info("Updating manager authentication in auth-service with ID: {} for: {}",
+                    manager.getId(), manager.getEmail());
+
+            Map<String, Object> request = new HashMap<>();
+            request.put("id", manager.getId().toString());
+            request.put("nom", manager.getNom());
+            request.put("prenom", manager.getPrenom());
+            request.put("email", manager.getEmail());
+            request.put("role", manager.getRole().name());
+            request.put("emailChanged", emailChanged);
+            request.put("passwordChanged", passwordChanged);
+
+            if (passwordChanged && newPassword != null) {
+                request.put("newPassword", newPassword);
+            }
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+            HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
+
+            String url = authServiceUrl + "/api/auth/sync/update-user";
+            restTemplate.postForEntity(url, entity, String.class);
+
+            log.info("Manager authentication updated successfully in auth-service: {}", manager.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to update manager authentication in auth-service: {}", e.getMessage(), e);
         }
     }
 
