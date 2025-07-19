@@ -21,8 +21,8 @@ import java.util.UUID;
 public class UtilisateurEntity {
     
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID id;
+    @Column(name = "id", columnDefinition = "UUID")
+    private UUID id;  // Same ID as in user-service - NO auto-generation!
     
     @Column(nullable = false)
     private String nom;

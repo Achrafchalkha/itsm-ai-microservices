@@ -15,16 +15,19 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * REST Controller for Technician operations
  * Handles CRUD operations for technicians with async auth-service integration
+ * Manager-authorized endpoints under /api/manager/technicians
  */
 @RestController
-@RequestMapping("/api/technicians")
+@RequestMapping("/api/manager/technicians")
 @RequiredArgsConstructor
 @Slf4j
 public class TechnicianController {
@@ -36,7 +39,7 @@ public class TechnicianController {
      * Create a new technician (MANAGER only) - assigns to manager's team
      */
     @PostMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<CreateTechnicianResponse> createTechnician(@Valid @RequestBody CreateTechnicianRequest request) {
         log.info("Creating technician: {}", request.getEmail());
 
@@ -54,7 +57,7 @@ public class TechnicianController {
      * Get all technicians (ADMIN or MANAGER)
      */
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<List<UtilisateurDto>> getAllTechnicians() {
         log.info("Getting all technicians");
         
@@ -70,7 +73,7 @@ public class TechnicianController {
      * Get technician by ID (ADMIN, MANAGER, or own profile)
      */
     @GetMapping("/{technicianId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER') or (hasRole('TECHNICIAN') and @securityService.isCurrentUser(#technicianId))")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_MANAGER') or (hasAuthority('ROLE_TECHNICIAN') and @securityService.isCurrentUser(#technicianId))")
     public ResponseEntity<UtilisateurDto> getTechnicianById(@PathVariable UUID technicianId) {
         log.info("Getting technician by ID: {}", technicianId);
         
@@ -82,7 +85,7 @@ public class TechnicianController {
      * Update technician (MANAGER only) - supports all fields including password
      */
     @PutMapping("/{technicianId}")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<UtilisateurDto> updateTechnician(
             @PathVariable UUID technicianId,
             @Valid @RequestBody UpdateTechnicianRequest request) {
@@ -93,22 +96,68 @@ public class TechnicianController {
     }
 
     /**
-     * Delete technician (ADMIN or MANAGER)
+     * Delete technician (ADMIN or MANAGER) - Soft delete
      */
     @DeleteMapping("/{technicianId}")
-    @PreAuthorize("hasRole('ADMIN') or hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<Void> deleteTechnician(@PathVariable UUID technicianId) {
+        log.info("=== TECHNICIAN DELETE START ===");
         log.info("Deleting technician: {}", technicianId);
-        
-        technicianService.deleteTechnician(technicianId);
-        return ResponseEntity.noContent().build();
+        log.info("Request URI: /api/manager/technicians/{}", technicianId);
+
+        try {
+            technicianService.deleteTechnician(technicianId);
+            log.info("Technician deletion service call successful for ID: {}", technicianId);
+            log.info("=== TECHNICIAN DELETE SUCCESS ===");
+
+            return ResponseEntity.noContent().build();
+
+        } catch (Exception e) {
+            log.error("=== TECHNICIAN DELETE ERROR ===");
+            log.error("Error deleting technician {}: {}", technicianId, e.getMessage(), e);
+            throw e;
+        }
     }
+
+    /**
+     * Reactivate technician (ADMIN or MANAGER) - Original endpoint with detailed logging
+     */
+    @PostMapping("/{technicianId}/reactivate")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_MANAGER')")
+    public ResponseEntity<Map<String, String>> reactivateTechnician(@PathVariable UUID technicianId) {
+        log.info("=== TECHNICIAN REACTIVATE START ===");
+        log.info("Reactivating technician: {}", technicianId);
+        log.info("Request URI: /api/manager/technicians/{}/reactivate", technicianId);
+
+        try {
+            technicianService.reactivateTechnician(technicianId);
+            log.info("Technician reactivation service call successful for ID: {}", technicianId);
+
+            Map<String, String> response = new HashMap<>();
+            response.put("message", "Technician réactivé avec succès dans les deux bases de données");
+            response.put("technicianId", technicianId.toString());
+
+            log.info("Technician reactivate response created: {}", response);
+            log.info("=== TECHNICIAN REACTIVATE SUCCESS ===");
+
+            return ResponseEntity.ok(response);
+
+        } catch (Exception e) {
+            log.error("=== TECHNICIAN REACTIVATE ERROR ===");
+            log.error("Error reactivating technician {}: {}", technicianId, e.getMessage(), e);
+            throw e;
+        }
+    }
+
+    // Removed temporary test endpoint
+
+    // Removed all temporary test endpoints
 
     /**
      * Get technicians by team (MANAGER only)
      */
     @GetMapping("/team/{teamId}")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<List<UtilisateurDto>> getTechniciansByTeam(@PathVariable UUID teamId) {
         log.info("Getting technicians for team: {}", teamId);
         
@@ -124,7 +173,7 @@ public class TechnicianController {
      * Get available technicians (MANAGER only)
      */
     @GetMapping("/available")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<List<UtilisateurDto>> getAvailableTechnicians() {
         log.info("Getting available technicians");
         
@@ -140,7 +189,7 @@ public class TechnicianController {
      * Assign technician to team (MANAGER only)
      */
     @PutMapping("/{technicianId}/team/{teamId}")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<UtilisateurDto> assignTechnicianToTeam(
             @PathVariable UUID technicianId,
             @PathVariable UUID teamId) {

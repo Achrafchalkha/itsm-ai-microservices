@@ -29,12 +29,29 @@ public class Utilisateur {
 
     public static Utilisateur creerUtilisateur(String nom, String prenom, String email, String motDePasseHashe, Role role) {
         return Utilisateur.builder()
-                .id(UUID.randomUUID())
+                .id(UUID.randomUUID())  // Only for new users, not for sync
                 .nom(nom)
                 .prenom(prenom)
                 .email(email)
                 .motDePasseHashe(motDePasseHashe)
                 .role(role != null ? role : Role.UTILISATEUR) // Default to UTILISATEUR if role is null
+                .dateCreation(LocalDateTime.now())
+                .dateModification(LocalDateTime.now())
+                .actif(true)
+                .build();
+    }
+
+    /**
+     * Factory method for sync operations - uses provided ID
+     */
+    public static Utilisateur creerUtilisateurAvecId(UUID id, String nom, String prenom, String email, String motDePasseHashe, Role role) {
+        return Utilisateur.builder()
+                .id(id)  // Use provided ID for dual database sync
+                .nom(nom)
+                .prenom(prenom)
+                .email(email)
+                .motDePasseHashe(motDePasseHashe)
+                .role(role != null ? role : Role.UTILISATEUR)
                 .dateCreation(LocalDateTime.now())
                 .dateModification(LocalDateTime.now())
                 .actif(true)

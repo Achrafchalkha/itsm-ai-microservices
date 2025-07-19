@@ -4,7 +4,6 @@ import com.itsm.user.domain.model.Role;
 import com.itsm.user.domain.model.Utilisateur;
 import com.itsm.user.domain.repository.UtilisateurRepository;
 import com.itsm.user.infrastructure.external.AuthServiceClient;
-import com.itsm.user.interfaces.dto.CompetenceDto;
 import com.itsm.user.interfaces.dto.CreateTechnicianRequest;
 import com.itsm.user.interfaces.dto.CreateTechnicianResponse;
 import com.itsm.user.interfaces.dto.UpdateTechnicianRequest;
@@ -13,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Optional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -89,7 +90,7 @@ public class TechnicianService {
         Utilisateur savedTechnician = utilisateurRepository.save(technician);
         log.info("Technician profile created in user_db with ID: {}", savedTechnician.getId());
 
-        // Sync to auth-service (auth_db.utilisateurs) with SAME ID
+        // Async sync to auth-service (auth_db.utilisateurs) with SAME ID
         try {
             authServiceClient.createTechnicianAuth(savedTechnician, request.getMotDePasse());
             log.info("Technician authentication created in auth_db with same ID: {}", savedTechnician.getId());
@@ -229,12 +230,48 @@ public class TechnicianService {
         technician.setDateModification(LocalDateTime.now());
         utilisateurRepository.save(technician);
 
-        // Async call to auth-service to disable authentication
+        // Async call to auth-service to disable authentication using same ID
         try {
-            authServiceClient.disableUserAuth(technician.getEmail());
-            log.info("Technician authentication disabled in auth-service: {}", technician.getEmail());
+            authServiceClient.disableUserAuth(technician.getId(), technician.getEmail());
+            log.info("Technician authentication disabled in auth-service with ID: {} for: {}", technician.getId(), technician.getEmail());
         } catch (Exception e) {
             log.error("Failed to disable technician authentication in auth-service: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Reactivate technician (undo soft delete)
+     * Reactivates both user_db.utilisateurs and auth_db.utilisateurs
+     */
+    @Transactional
+    public void reactivateTechnician(UUID technicianId) {
+        log.info("Reactivating technician: {}", technicianId);
+
+        // Find technician including inactive ones
+        Optional<Utilisateur> technicianOpt = utilisateurRepository.findById(technicianId);
+        if (technicianOpt.isEmpty()) {
+            throw new IllegalArgumentException("Technician non trouvé: " + technicianId);
+        }
+
+        Utilisateur technician = technicianOpt.get();
+
+        if (technician.isActif()) {
+            log.warn("Technician is already active: {}", technicianId);
+            return;
+        }
+
+        // Reactivate in user-service
+        technician.setActif(true);
+        technician.setDateModification(LocalDateTime.now());
+        utilisateurRepository.save(technician);
+        log.info("Technician reactivated in user_db: {}", technicianId);
+
+        // Async call to auth-service to reactivate authentication
+        try {
+            authServiceClient.reactivateUserAuth(technician.getId(), technician.getEmail());
+            log.info("Technician authentication reactivated in auth-service with ID: {} for: {}", technician.getId(), technician.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to reactivate technician authentication in auth-service: {}", e.getMessage());
         }
     }
 

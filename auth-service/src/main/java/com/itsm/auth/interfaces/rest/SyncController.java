@@ -115,7 +115,7 @@ public class SyncController {
     }
 
     /**
-     * Disable user authentication (soft delete)
+     * Disable user authentication (soft delete) - Legacy endpoint using email
      */
     @PostMapping("/disable/{email}")
     public ResponseEntity<String> disableUserAuth(@PathVariable String email) {
@@ -131,6 +131,54 @@ public class SyncController {
             log.error("Failed to disable user authentication: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Failed to disable user authentication: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Disable user authentication by ID (for dual database synchronization)
+     * Uses same ID as in user-service
+     */
+    @PostMapping("/disable-user")
+    public ResponseEntity<String> disableUserAuthById(@RequestBody Map<String, Object> request) {
+        try {
+            UUID id = UUID.fromString((String) request.get("id"));
+            String email = (String) request.get("email");
+
+            log.info("Sync request: Disabling user authentication with ID: {} for: {}", id, email);
+
+            utilisateurService.desactiverUtilisateurParId(id);
+
+            log.info("Successfully disabled user authentication with ID: {} for: {}", id, email);
+            return ResponseEntity.ok("User authentication disabled successfully");
+
+        } catch (Exception e) {
+            log.error("Failed to disable user authentication: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to disable user authentication: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Reactivate user authentication by ID (for dual database synchronization)
+     * Uses same ID as in user-service
+     */
+    @PostMapping("/reactivate-user")
+    public ResponseEntity<String> reactivateUserAuthById(@RequestBody Map<String, Object> request) {
+        try {
+            UUID id = UUID.fromString((String) request.get("id"));
+            String email = (String) request.get("email");
+
+            log.info("Sync request: Reactivating user authentication with ID: {} for: {}", id, email);
+
+            utilisateurService.reactiverUtilisateurParId(id);
+
+            log.info("Successfully reactivated user authentication with ID: {} for: {}", id, email);
+            return ResponseEntity.ok("User authentication reactivated successfully");
+
+        } catch (Exception e) {
+            log.error("Failed to reactivate user authentication: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Failed to reactivate user authentication: " + e.getMessage());
         }
     }
 

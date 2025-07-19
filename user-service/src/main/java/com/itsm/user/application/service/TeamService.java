@@ -73,6 +73,28 @@ public class TeamService {
         log.debug("Getting team: {}", teamId);
         return teamRepository.findById(teamId);
     }
+
+    /**
+     * Update existing team (does NOT create new team)
+     */
+    @Transactional
+    public Team mettreAJourEquipe(Team team) {
+        log.info("Updating existing team: {} (ID: {})", team.getNom(), team.getId());
+
+        // Ensure the team exists
+        if (!teamRepository.existsById(team.getId())) {
+            throw new IllegalArgumentException("Equipe non trouvee pour mise à jour: " + team.getId());
+        }
+
+        // Update modification timestamp
+        team.mettreAJour();
+
+        // Save will update existing entity due to TeamRepositoryImpl logic
+        Team updatedTeam = teamRepository.save(team);
+        log.info("Team updated successfully: {} (ID: {})", updatedTeam.getNom(), updatedTeam.getId());
+
+        return updatedTeam;
+    }
     
     /**
      * Get all teams

@@ -22,7 +22,7 @@ import org.springframework.web.client.RestTemplate;
 @EnableMethodSecurity(prePostEnabled = true)
 @RequiredArgsConstructor
 public class SecurityConfig {
-    
+
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     
     @Bean
@@ -39,20 +39,20 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 // Allow health check endpoints
                 .requestMatchers("/actuator/**").permitAll()
-                
+
                 // Allow Eureka registration
                 .requestMatchers("/eureka/**").permitAll()
-                
+
                 // All other API endpoints require authentication
                 .requestMatchers("/api/**").authenticated()
-                
+
                 // Any other request requires authentication
                 .anyRequest().authenticated()
             )
-            
+
             // Add JWT filter before UsernamePasswordAuthenticationFilter
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        
+
         return http.build();
     }
 

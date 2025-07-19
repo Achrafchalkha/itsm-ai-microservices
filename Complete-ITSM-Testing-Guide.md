@@ -88,15 +88,185 @@ Content-Type: application/json
 }
 ```
 
-## Phase 2: User Service Testing
+## Phase 2: User Service Testing - Manager CRUD (Admin Only)
 
-### 2.1 Get All Users (Admin/Manager)
+### 2.1 Create Manager with Team and Categories (ADMIN only)
 ```bash
-GET http://localhost:8082/api/users
+POST http://localhost:8082/api/admin/managers
+Authorization: Bearer {admin-token}
+Content-Type: application/json
+
+{
+  "nom": "Benali",
+  "prenom": "Nadia",
+  "email": "manager1@itsm.com",
+  "motDePasse": "manager123",
+  "localisation": "Toulouse - Bureau 410",
+  "telephone": "+33 5 61 78 90 12",
+  "specialite": "Développement Logiciel",
+  "teamName": "Équipe DevOps",
+  "teamDescription": "Équipe en charge du développement, de l'intégration continue et du déploiement",
+  "teamCategories": ["DEVELOPPEMENT", "DEVOPS", "CLOUD"]
+}
+```
+
+### 2.2 Get All Managers (ADMIN only)
+```bash
+GET http://localhost:8082/api/admin/managers
 Authorization: Bearer {admin-token}
 ```
 
-### 2.2 Get User Profile
+### 2.3 Get Manager by ID (ADMIN or MANAGER)
+```bash
+GET http://localhost:8082/api/admin/managers/{managerId}
+Authorization: Bearer {admin-token}
+```
+
+### 2.4 Update Manager (ADMIN only)
+```bash
+PUT http://localhost:8082/api/admin/managers/{managerId}
+Authorization: Bearer {admin-token}
+Content-Type: application/json
+
+{
+  "nom": "Benali",
+  "prenom": "Nadia",
+  "email": "manager1@itsm.com",
+  "motDePasse": "newpassword123",
+  "localisation": "Paris - Bureau 205",
+  "telephone": "+33 1 42 56 78 90",
+  "specialite": "Management IT",
+  "teamName": "Équipe Infrastructure",
+  "teamDescription": "Équipe infrastructure et sécurité",
+  "teamCategories": ["INFRASTRUCTURE", "SECURITE", "RESEAU"]
+}
+```
+
+### 2.5 Delete Manager (ADMIN only) - Soft Delete
+```bash
+DELETE http://localhost:8082/api/admin/managers/{managerId}
+Authorization: Bearer {admin-token}
+```
+
+### 2.6 Reactivate Manager (ADMIN only) - Undo Soft Delete
+```bash
+POST http://localhost:8082/api/admin/managers/{managerId}/reactivate
+Authorization: Bearer {admin-token}
+```
+
+**Response:**
+```json
+{
+  "message": "Manager réactivé avec succès dans les deux bases de données",
+  "managerId": "uuid-here"
+}
+```
+
+## Phase 3: Technician CRUD (Manager Authorization)
+
+### 3.1 Create Technician with Competences (MANAGER only)
+```bash
+POST http://localhost:8082/api/manager/technicians
+Authorization: Bearer {manager-token}
+Content-Type: application/json
+
+{
+  "nom": "Moreau",
+  "prenom": "Julien",
+  "email": "technicien2@itsm.com",
+  "motDePasse": "devtech2025",
+  "localisation": "Toulouse",
+  "telephone": "+33 5 62 34 56 78",
+  "specialite": "Intégration Continue et Déploiement",
+  "competences": [
+    {
+      "nom": "Jenkins",
+      "description": "Configuration de pipelines d'intégration continue",
+      "categorie": "DEVOPS",
+      "niveau": "AVANCE"
+    },
+    {
+      "nom": "Docker",
+      "description": "Création et gestion de conteneurs pour les applications",
+      "categorie": "CLOUD",
+      "niveau": "SENIOR"
+    },
+    {
+      "nom": "Git",
+      "description": "Utilisation avancée de Git pour le versionnement",
+      "categorie": "DEVELOPPEMENT",
+      "niveau": "AVANCE"
+    }
+  ]
+}
+```
+
+### 3.2 Get All Technicians (ADMIN or MANAGER)
+```bash
+GET http://localhost:8082/api/manager/technicians
+Authorization: Bearer {manager-token}
+```
+
+### 3.3 Get Technician by ID (ADMIN, MANAGER, or own profile)
+```bash
+GET http://localhost:8082/api/manager/technicians/{technicianId}
+Authorization: Bearer {manager-token}
+```
+
+### 3.4 Update Technician (ADMIN or MANAGER)
+```bash
+PUT http://localhost:8082/api/manager/technicians/{technicianId}
+Authorization: Bearer {manager-token}
+Content-Type: application/json
+
+{
+  "nom": "Moreau",
+  "prenom": "Julien",
+  "email": "technicien2@itsm.com",
+  "motDePasse": "newtech2025",
+  "localisation": "Paris",
+  "telephone": "+33 1 45 67 89 01",
+  "specialite": "DevOps et Cloud",
+  "competences": [
+    {
+      "nom": "Kubernetes",
+      "description": "Orchestration de conteneurs",
+      "categorie": "CLOUD",
+      "niveau": "EXPERT"
+    },
+    {
+      "nom": "Terraform",
+      "description": "Infrastructure as Code",
+      "categorie": "DEVOPS",
+      "niveau": "SENIOR"
+    }
+  ]
+}
+```
+
+### 3.5 Delete Technician (ADMIN or MANAGER) - Soft Delete
+```bash
+DELETE http://localhost:8082/api/manager/technicians/{technicianId}
+Authorization: Bearer {manager-token}
+```
+
+### 3.6 Reactivate Technician (ADMIN or MANAGER) - Undo Soft Delete
+```bash
+POST http://localhost:8082/api/manager/technicians/{technicianId}/reactivate
+Authorization: Bearer {manager-token}
+```
+
+**Response:**
+```json
+{
+  "message": "Technician réactivé avec succès dans les deux bases de données",
+  "technicianId": "uuid-here"
+}
+```
+
+## Phase 4: Additional User Service Testing
+
+### 4.1 Get User Profile
 ```bash
 GET http://localhost:8082/api/users/profile
 Authorization: Bearer {any-token}

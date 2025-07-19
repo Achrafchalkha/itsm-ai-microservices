@@ -37,8 +37,7 @@ public class SecurityConfig {
                         .requestMatchers("/actuator/**").permitAll()
                         .requestMatchers("/error").permitAll() // Allow error endpoint
                         .requestMatchers("/api/admin/debug-token", "/api/admin/public-test").permitAll() // Allow debug endpoints
-                        .requestMatchers("/api/admin/**").hasRole("ADMIN") // Admin endpoints require ADMIN role
-                        .requestMatchers("/api/manager/**").hasRole("MANAGER") // Manager endpoints require MANAGER role
+                        // Remove broad /api/admin/** and /api/manager/** rules - these should only apply to auth-service endpoints
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

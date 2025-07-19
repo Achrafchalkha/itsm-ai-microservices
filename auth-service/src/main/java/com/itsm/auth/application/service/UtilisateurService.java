@@ -162,6 +162,50 @@ public class UtilisateurService {
     }
 
     /**
+     * Deactivate user by ID (for dual database synchronization)
+     * Uses same ID as in user-service
+     */
+    @Transactional
+    public void desactiverUtilisateurParId(UUID id) {
+        log.info("Deactivating user with ID: {}", id);
+
+        Optional<UtilisateurEntity> entityOpt = utilisateurRepository.findById(id);
+        if (entityOpt.isPresent()) {
+            UtilisateurEntity entity = entityOpt.get();
+            entity.setActif(false);
+            entity.setDateModification(LocalDateTime.now());
+            utilisateurRepository.save(entity);
+
+            log.info("User deactivated successfully with ID: {} (email: {})", id, entity.getEmail());
+        } else {
+            log.warn("User not found for deactivation with ID: {}", id);
+            throw new RuntimeException("Utilisateur non trouvé avec ID: " + id);
+        }
+    }
+
+    /**
+     * Reactivate user by ID (for dual database synchronization)
+     * Uses same ID as in user-service
+     */
+    @Transactional
+    public void reactiverUtilisateurParId(UUID id) {
+        log.info("Reactivating user with ID: {}", id);
+
+        Optional<UtilisateurEntity> entityOpt = utilisateurRepository.findById(id);
+        if (entityOpt.isPresent()) {
+            UtilisateurEntity entity = entityOpt.get();
+            entity.setActif(true);
+            entity.setDateModification(LocalDateTime.now());
+            utilisateurRepository.save(entity);
+
+            log.info("User reactivated successfully with ID: {} (email: {})", id, entity.getEmail());
+        } else {
+            log.warn("User not found for reactivation with ID: {}", id);
+            throw new RuntimeException("Utilisateur non trouvé avec ID: " + id);
+        }
+    }
+
+    /**
      * Validate user credentials for login
      */
     @Transactional(readOnly = true)

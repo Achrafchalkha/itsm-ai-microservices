@@ -85,7 +85,7 @@ public class ManagerService {
             log.info("Team created and assigned to manager: {}", team.getId());
         }
 
-        // Sync to auth-service (auth_db.utilisateurs) with SAME ID
+        // Async sync to auth-service (auth_db.utilisateurs) with SAME ID
         try {
             authServiceClient.createManagerAuth(savedManager, request.getMotDePasse(),
                     request.getTeamName(), request.getTeamDescription());
@@ -221,12 +221,48 @@ public class ManagerService {
         manager.setDateModification(LocalDateTime.now());
         utilisateurRepository.save(manager);
 
-        // Async call to auth-service to disable authentication
+        // Async call to auth-service to disable authentication using same ID
         try {
-            authServiceClient.disableUserAuth(manager.getEmail());
-            log.info("Manager authentication disabled in auth-service: {}", manager.getEmail());
+            authServiceClient.disableUserAuth(manager.getId(), manager.getEmail());
+            log.info("Manager authentication disabled in auth-service with ID: {} for: {}", manager.getId(), manager.getEmail());
         } catch (Exception e) {
             log.error("Failed to disable manager authentication in auth-service: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Reactivate manager (undo soft delete)
+     * Reactivates both user_db.utilisateurs and auth_db.utilisateurs
+     */
+    @Transactional
+    public void reactivateManager(UUID managerId) {
+        log.info("Reactivating manager: {}", managerId);
+
+        // Find manager including inactive ones
+        Optional<Utilisateur> managerOpt = utilisateurRepository.findById(managerId);
+        if (managerOpt.isEmpty()) {
+            throw new IllegalArgumentException("Manager non trouvé: " + managerId);
+        }
+
+        Utilisateur manager = managerOpt.get();
+
+        if (manager.isActif()) {
+            log.warn("Manager is already active: {}", managerId);
+            return;
+        }
+
+        // Reactivate in user-service
+        manager.setActif(true);
+        manager.setDateModification(LocalDateTime.now());
+        utilisateurRepository.save(manager);
+        log.info("Manager reactivated in user_db: {}", managerId);
+
+        // Async call to auth-service to reactivate authentication
+        try {
+            authServiceClient.reactivateUserAuth(manager.getId(), manager.getEmail());
+            log.info("Manager authentication reactivated in auth-service with ID: {} for: {}", manager.getId(), manager.getEmail());
+        } catch (Exception e) {
+            log.error("Failed to reactivate manager authentication in auth-service: {}", e.getMessage());
         }
     }
 
@@ -272,7 +308,7 @@ public class ManagerService {
     }
 
     /**
-     * Update manager's team information
+     * Update manager's team information (updates existing team, does NOT create new one)
      */
     private void updateManagerTeam(UUID teamId, UpdateManagerRequest request) {
         try {
@@ -285,26 +321,32 @@ public class ManagerService {
                 if (request.getTeamName() != null && !request.getTeamName().equals(team.getNom())) {
                     team.setNom(request.getTeamName());
                     teamUpdated = true;
+                    log.info("Updating team name from '{}' to '{}'", team.getNom(), request.getTeamName());
                 }
 
                 // Update team description if provided
                 if (request.getTeamDescription() != null && !request.getTeamDescription().equals(team.getDescription())) {
                     team.setDescription(request.getTeamDescription());
                     teamUpdated = true;
-                }
-
-                if (teamUpdated) {
-                    teamService.creerEquipe(team.getNom(), team.getDescription(), team.getManagerId());
+                    log.info("Updating team description for team: {}", team.getId());
                 }
 
                 // Update team categories if provided
                 if (request.getTeamCategories() != null) {
                     // Clear existing categories and add new ones
                     team.getCategories().clear();
-                    for (String category : request.getTeamCategories()) {
-                        teamService.ajouterCategorieEquipe(teamId, category);
-                    }
+                    team.getCategories().addAll(request.getTeamCategories());
+                    teamUpdated = true;
+                    log.info("Updating team categories for team: {} to: {}", team.getId(), request.getTeamCategories());
                 }
+
+                // Save the updated team (this will UPDATE existing team, not create new one)
+                if (teamUpdated) {
+                    teamService.mettreAJourEquipe(team);  // ✅ UPDATE instead of CREATE
+                    log.info("Team updated successfully: {} (ID: {})", team.getNom(), team.getId());
+                }
+            } else {
+                log.warn("Team not found for update: {}", teamId);
             }
         } catch (Exception e) {
             log.error("Failed to update team for manager: {}", e.getMessage());
