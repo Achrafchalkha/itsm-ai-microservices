@@ -8,6 +8,7 @@ import com.itsm.user.interfaces.dto.CreateTechnicianRequest;
 import com.itsm.user.interfaces.dto.CreateTechnicianResponse;
 import com.itsm.user.interfaces.dto.UpdateTechnicianRequest;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.type.TypeReference;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -17,6 +18,7 @@ import java.util.Optional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -317,5 +319,156 @@ public class TechnicianService {
                 .stream()
                 .filter(t -> t.getCompetencesJson() != null && t.getCompetencesJson().contains(competence))
                 .toList();
+    }
+
+    /**
+     * Get all active technicians for assignment-service
+     */
+    @Transactional(readOnly = true)
+    public List<com.itsm.user.interfaces.dto.TechnicianResponseDTO> getAllActiveTechnicians() {
+        log.debug("Getting all active technicians for assignment-service");
+        return utilisateurRepository.findByRoleAndActif(Role.TECHNICIEN, true)
+                .stream()
+                .map(this::convertToTechnicianResponseDTO)
+                .toList();
+    }
+
+    /**
+     * Get technicians by team IDs for assignment-service
+     */
+    @Transactional(readOnly = true)
+    public List<com.itsm.user.interfaces.dto.TechnicianResponseDTO> getTechniciansByTeams(List<UUID> teamIds) {
+        log.debug("Getting technicians for teams: {}", teamIds);
+        return utilisateurRepository.findByRoleAndActif(Role.TECHNICIEN, true)
+                .stream()
+                .filter(tech -> teamIds.contains(tech.getTeamId()))
+                .map(this::convertToTechnicianResponseDTO)
+                .toList();
+    }
+
+    /**
+     * Get technicians by category (through team category mapping)
+     */
+    @Transactional(readOnly = true)
+    public List<com.itsm.user.interfaces.dto.TechnicianResponseDTO> getTechniciansByCategory(String category) {
+        log.debug("Getting technicians for category: {}", category);
+
+        // Map categories to team specialties or competences
+        return utilisateurRepository.findByRoleAndActif(Role.TECHNICIEN, true)
+                .stream()
+                .filter(tech -> matchesCategoryCompetence(tech, category))
+                .map(this::convertToTechnicianResponseDTO)
+                .toList();
+    }
+
+    /**
+     * Get technician by ID for assignment-service
+     */
+    @Transactional(readOnly = true)
+    public com.itsm.user.interfaces.dto.TechnicianResponseDTO getTechnicianDTOById(UUID technicianId) {
+        log.debug("Getting technician by ID: {}", technicianId);
+        Utilisateur technician = utilisateurRepository.findById(technicianId)
+                .orElseThrow(() -> new RuntimeException("Technician not found: " + technicianId));
+
+        if (technician.getRole() != Role.TECHNICIEN) {
+            throw new RuntimeException("User is not a technician: " + technicianId);
+        }
+
+        return convertToTechnicianResponseDTO(technician);
+    }
+
+    /**
+     * Update technician workload for assignment-service
+     */
+    @Transactional
+    public void updateWorkload(UUID technicianId, int increment) {
+        log.debug("Updating workload for technician {} by {}", technicianId, increment);
+
+        Utilisateur technician = utilisateurRepository.findById(technicianId)
+                .orElseThrow(() -> new RuntimeException("Technician not found: " + technicianId));
+
+        int newWorkload = Math.max(0, technician.getChargeActuelle() + increment);
+        technician.setChargeActuelle(newWorkload);
+        technician.setDateModification(LocalDateTime.now());
+
+        utilisateurRepository.save(technician);
+        log.info("Updated workload for technician {} to {}", technicianId, newWorkload);
+    }
+
+    /**
+     * Get technicians who have competences in a specific category
+     * Used by assignment-service to find technicians based on their actual competences
+     */
+    @Transactional(readOnly = true)
+    public List<com.itsm.user.interfaces.dto.TechnicianResponseDTO> getTechniciansByCompetenceCategory(String category) {
+        log.debug("Getting technicians with competences in category: {}", category);
+
+        return utilisateurRepository.findByRoleAndActif(Role.TECHNICIEN, true)
+                .stream()
+                .filter(tech -> hasCompetenceInCategory(tech, category))
+                .map(this::convertToTechnicianResponseDTO)
+                .toList();
+    }
+
+    /**
+     * Check if technician has competences in the specified category
+     */
+    private boolean hasCompetenceInCategory(Utilisateur technician, String category) {
+        if (technician.getCompetencesJson() == null || technician.getCompetencesJson().trim().isEmpty()) {
+            return false;
+        }
+
+        try {
+            List<Map<String, Object>> competences = objectMapper.readValue(
+                    technician.getCompetencesJson(),
+                    new TypeReference<List<Map<String, Object>>>() {});
+
+            return competences.stream()
+                    .anyMatch(comp -> category.equals(comp.get("categorie")));
+
+        } catch (Exception e) {
+            log.warn("Error parsing competences JSON for technician {}: {}", technician.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Check if technician matches category competence
+     */
+    private boolean matchesCategoryCompetence(Utilisateur technician, String category) {
+        if (technician.getCompetencesJson() == null) {
+            return false;
+        }
+
+        try {
+            // Parse competences JSON and check if any competence matches the category
+            String competencesJson = technician.getCompetencesJson();
+            return competencesJson.toUpperCase().contains(category.toUpperCase());
+        } catch (Exception e) {
+            log.warn("Error parsing competences for technician {}: {}", technician.getId(), e.getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Convert to TechnicianResponseDTO for assignment-service
+     */
+    private com.itsm.user.interfaces.dto.TechnicianResponseDTO convertToTechnicianResponseDTO(Utilisateur utilisateur) {
+        return com.itsm.user.interfaces.dto.TechnicianResponseDTO.builder()
+                .id(utilisateur.getId())
+                .nom(utilisateur.getNom())
+                .prenom(utilisateur.getPrenom())
+                .email(utilisateur.getEmail())
+                .role(utilisateur.getRole().name())
+                .teamId(utilisateur.getTeamId())
+                .localisation(utilisateur.getLocalisation())
+                .telephone(utilisateur.getTelephone())
+                .specialite(utilisateur.getSpecialite())
+                .competencesJson(utilisateur.getCompetencesJson())
+                .chargeActuelle(utilisateur.getChargeActuelle())
+                .dateCreation(utilisateur.getDateCreation())
+                .dateModification(utilisateur.getDateModification())
+                .actif(utilisateur.isActif())
+                .build();
     }
 }

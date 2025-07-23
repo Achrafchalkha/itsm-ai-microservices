@@ -1,13 +1,13 @@
-package com.itsm.assignment_service;
+package com.itsm.analytics_service;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class AssignmentServiceApplication {
+public class AnalyticsServiceApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(AssignmentServiceApplication.class, args);
+		SpringApplication.run(AnalyticsServiceApplication.class, args);
 	}
 
 }

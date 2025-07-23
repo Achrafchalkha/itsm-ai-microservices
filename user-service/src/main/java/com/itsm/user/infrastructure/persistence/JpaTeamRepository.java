@@ -30,7 +30,12 @@ public interface JpaTeamRepository extends JpaRepository<JpaTeamEntity, UUID> {
      * Find active teams
      */
     List<JpaTeamEntity> findByActif(boolean actif);
-    
+
+    /**
+     * Find all active teams (convenience method)
+     */
+    List<JpaTeamEntity> findByActifTrue();
+
     /**
      * Count teams by manager
      */

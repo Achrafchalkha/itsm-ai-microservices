@@ -41,7 +41,12 @@ public interface TeamRepository {
      * Find active teams
      */
     List<Team> findByActif(boolean actif);
-    
+
+    /**
+     * Find all active teams (convenience method)
+     */
+    List<Team> findByActifTrue();
+
     /**
      * Check if team exists by ID
      */

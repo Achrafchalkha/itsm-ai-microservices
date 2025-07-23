@@ -73,7 +73,13 @@ public class TeamRepositoryImpl implements TeamRepository {
         log.debug("Finding teams by actif: {}", actif);
         return teamMapper.toDomainList(jpaTeamRepository.findByActif(actif));
     }
-    
+
+    @Override
+    public List<Team> findByActifTrue() {
+        log.debug("Finding all active teams");
+        return teamMapper.toDomainList(jpaTeamRepository.findByActifTrue());
+    }
+
     @Override
     public boolean existsById(UUID id) {
         return jpaTeamRepository.existsById(id);

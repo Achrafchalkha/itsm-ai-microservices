@@ -57,13 +57,13 @@ public class Ticket {
     /**
      * Factory method to create a new ticket
      */
-    public static Ticket creerTicket(String titre, String description, PrioriteTicket priorite, 
+    public static Ticket creerTicket(String titre, String description, PrioriteTicket priorite,
                                    String categorie, UUID utilisateurId) {
         return Ticket.builder()
                 .id(UUID.randomUUID())
                 .titre(titre)
                 .description(description)
-                .statut(StatutTicket.OUVERT)
+                .statut(StatutTicket.EN_COURS)  // Changed: New tickets start as EN_COURS
                 .priorite(priorite)
                 .categorie(categorie)
                 .utilisateurId(utilisateurId)
@@ -82,7 +82,7 @@ public class Ticket {
     public void assignerTechnicien(UUID technicienId, UUID teamId) {
         this.technicienId = technicienId;
         this.teamId = teamId;
-        this.statut = StatutTicket.EN_COURS;
+        // Keep current status (EN_COURS) - don't change it during assignment
         this.dateModification = LocalDateTime.now();
     }
     

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ticket Reassignment Notification</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #ffc107;
+            color: #212529;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+        }
+        .content {
+            background-color: #f8f9fa;
+            padding: 20px;
+            border: 1px solid #dee2e6;
+        }
+        .footer {
+            background-color: #6c757d;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            border-radius: 0 0 5px 5px;
+            font-size: 12px;
+        }
+        .ticket-info {
+            background-color: white;
+            padding: 15px;
+            margin: 15px 0;
+            border-left: 4px solid #ffc107;
+            border-radius: 3px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #ffc107;
+            color: #212529;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .reassignment-info {
+            background-color: #fff3cd;
+            padding: 10px;
+            border-radius: 3px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🔄 Ticket Reassignment</h1>
+        <p>A ticket has been reassigned to you</p>
+    </div>
+    
+    <div class="content">
+        <p>Hello,</p>
+        
+        <p>A ticket has been reassigned to you in the ITSM system. Please review the details below:</p>
+        
+        <div class="ticket-info">
+            <h3 th:text="${title}">Ticket Title</h3>
+            
+            <p><strong>Ticket ID:</strong> <span th:text="${ticketId}">TICKET-123</span></p>
+            <p><strong>Reassigned At:</strong> <span th:text="${#temporals.format(notification.createdAt, 'dd/MM/yyyy HH:mm')}">01/01/2024 10:00</span></p>
+        </div>
+        
+        <div class="reassignment-info">
+            <h4>Reassignment Details:</h4>
+            <p th:if="${previousTechnician}"><strong>Previous Technician:</strong> <span th:text="${previousTechnician}">John Doe</span></p>
+            <p th:if="${reassignedBy}"><strong>Reassigned By:</strong> <span th:text="${reassignedBy}">Manager Name</span></p>
+            <p th:if="${reason}"><strong>Reason:</strong> <span th:text="${reason}">Workload balancing</span></p>
+        </div>
+        
+        <div th:if="${message}">
+            <h4>Description:</h4>
+            <p th:text="${message}">Ticket description goes here...</p>
+        </div>
+        
+        <p>Please log into the ITSM system to view the full ticket details and continue working on it.</p>
+        
+        <a href="#" class="btn">View Ticket</a>
+    </div>
+    
+    <div class="footer">
+        <p>This is an automated notification from the ITSM system.</p>
+        <p>Please do not reply to this email.</p>
+        <p>&copy; 2024 ITSM System. All rights reserved.</p>
+    </div>
+</body>
+</html>

@@ -168,4 +168,60 @@ public class TeamService {
         log.debug("Found team {} for manager {}", teamId, managerId);
         return teamId;
     }
+
+    /**
+     * Get all active teams for assignment-service
+     */
+    @Transactional(readOnly = true)
+    public List<com.itsm.user.interfaces.dto.TeamResponseDTO> getAllActiveTeams() {
+        log.debug("Getting all active teams for assignment-service");
+        return teamRepository.findByActifTrue()
+                .stream()
+                .map(this::convertToTeamResponseDTO)
+                .toList();
+    }
+
+    /**
+     * Get teams by category for assignment-service
+     */
+    @Transactional(readOnly = true)
+    public List<com.itsm.user.interfaces.dto.TeamResponseDTO> getTeamsByCategory(String category) {
+        log.debug("Getting teams for category: {}", category);
+
+        // Use actual team categories from team_categories table
+        return teamRepository.findByActifTrue()
+                .stream()
+                .filter(team -> team.getCategories().contains(category))
+                .map(this::convertToTeamResponseDTO)
+                .toList();
+    }
+
+    /**
+     * Get team by ID for assignment-service
+     */
+    @Transactional(readOnly = true)
+    public com.itsm.user.interfaces.dto.TeamResponseDTO getTeamById(UUID teamId) {
+        log.debug("Getting team by ID: {}", teamId);
+        Team team = teamRepository.findById(teamId)
+                .orElseThrow(() -> new RuntimeException("Team not found: " + teamId));
+
+        return convertToTeamResponseDTO(team);
+    }
+
+
+
+    /**
+     * Convert to TeamResponseDTO for assignment-service
+     */
+    private com.itsm.user.interfaces.dto.TeamResponseDTO convertToTeamResponseDTO(Team team) {
+        return com.itsm.user.interfaces.dto.TeamResponseDTO.builder()
+                .id(team.getId())
+                .nom(team.getNom())
+                .description(team.getDescription())
+                .managerId(team.getManagerId())
+                .dateCreation(team.getDateCreation())
+                .dateModification(team.getDateModification())
+                .actif(team.isActif())
+                .build();
+    }
 }
