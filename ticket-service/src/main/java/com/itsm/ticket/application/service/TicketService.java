@@ -7,6 +7,7 @@ import com.itsm.ticket.infrastructure.kafka.TicketEventPublisher;
 import com.itsm.ticket.infrastructure.kafka.event.TicketCreatedEvent;
 import com.itsm.ticket.infrastructure.persistence.entity.TicketEntity;
 import com.itsm.ticket.infrastructure.persistence.repository.TicketRepository;
+import com.itsm.ticket.infrastructure.storage.FileStorageService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -26,19 +27,35 @@ public class TicketService {
     
     private final TicketRepository ticketRepository;
     private final TicketEventPublisher eventPublisher;
+    private final FileStorageService fileStorageService;
     
     /**
      * Create a new ticket
      */
     @Transactional
     public Ticket createTicket(String titre, String description, PrioriteTicket priorite,
-                              String categorie, UUID utilisateurId, String utilisateurEmail, boolean enableNlp) {
+                              String categorie, UUID utilisateurId, String utilisateurEmail, boolean enableNlp, String fichiersAttaches) {
         
         log.info("Creating ticket for user: {}", utilisateurId);
         
         // Create domain object
         Ticket ticket = Ticket.creerTicket(titre, description, priorite, categorie, utilisateurId);
         ticket.setEnableNlp(enableNlp);
+
+        // Process and save attached files if provided
+        if (fichiersAttaches != null && !fichiersAttaches.trim().isEmpty()) {
+            log.info("Processing attached files for ticket: {} characters", fichiersAttaches.length());
+            log.info("Raw attached files JSON: {}", fichiersAttaches.substring(0, Math.min(500, fichiersAttaches.length())));
+
+            // Process files and save them locally
+            String processedFiles = fileStorageService.processAttachedFiles(fichiersAttaches, ticket.getId());
+            ticket.setFichiersAttaches(processedFiles);
+
+            log.info("Attached files processed and saved for ticket: {}", ticket.getId());
+            log.info("Processed files result: {}", processedFiles != null ? processedFiles.substring(0, Math.min(200, processedFiles.length())) : "null");
+        } else {
+            log.info("No attached files provided for ticket: {}", ticket.getId());
+        }
         
         // Convert to entity and save
         TicketEntity ticketEntity = convertToEntity(ticket);
@@ -146,6 +163,7 @@ public class TicketService {
                 .dateModification(ticket.getDateModification())
                 .dateFermeture(ticket.getDateFermeture())
                 .commentaireResolution(ticket.getCommentaireResolution())
+                .fichiersAttaches(ticket.getFichiersAttaches())
                 .actif(ticket.getActif())
                 .build();
     }
@@ -176,6 +194,7 @@ public class TicketService {
                 .dateModification(entity.getDateModification())
                 .dateFermeture(entity.getDateFermeture())
                 .commentaireResolution(entity.getCommentaireResolution())
+                .fichiersAttaches(entity.getFichiersAttaches())
                 .actif(entity.getActif())
                 .build();
     }

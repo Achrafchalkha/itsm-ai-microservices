@@ -136,7 +136,6 @@ public class ManagerService {
         Utilisateur existingManager = getManagerById(managerId);
         boolean hasChanges = false;
         boolean emailChanged = false;
-        boolean passwordChanged = false;
 
         // Update user-service fields (user_db.utilisateurs)
         if (request.getNom() != null && !request.getNom().equals(existingManager.getNom())) {
@@ -174,10 +173,7 @@ public class ManagerService {
             hasChanges = true;
         }
 
-        if (request.getMotDePasse() != null && !request.getMotDePasse().trim().isEmpty()) {
-            passwordChanged = true;
-            hasChanges = true;
-        }
+        // Password updates are handled through separate endpoint for security
 
         if (hasChanges) {
             existingManager.setDateModification(LocalDateTime.now());
@@ -195,8 +191,8 @@ public class ManagerService {
         // Sync changes to auth-service (auth_db.utilisateurs)
         if (hasChanges) {
             try {
-                authServiceClient.updateManagerAuth(existingManager, request.getMotDePasse(),
-                        emailChanged, passwordChanged);
+                authServiceClient.updateManagerAuth(existingManager, null,
+                        emailChanged, false);
                 log.info("Manager authentication updated in auth_db: {}", managerId);
             } catch (Exception e) {
                 log.error("Failed to update manager authentication in auth-service: {}", e.getMessage());

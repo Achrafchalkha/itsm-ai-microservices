@@ -75,6 +75,34 @@ public class TeamService {
     }
 
     /**
+     * Get team by ID - for manager enrichment
+     */
+    @Transactional(readOnly = true)
+    public Optional<Team> getTeamById(UUID teamId) {
+        log.info("🔍 TeamService: Looking for team with ID: {}", teamId);
+
+        if (teamId == null) {
+            log.warn("⚠️ TeamService: teamId is null");
+            return Optional.empty();
+        }
+
+        Optional<Team> teamOpt = teamRepository.findById(teamId);
+
+        if (teamOpt.isPresent()) {
+            Team team = teamOpt.get();
+            log.info("✅ TeamService: Found team - ID: {}, Name: '{}', Description: '{}', Categories: {}",
+                    team.getId(), team.getNom(), team.getDescription(), team.getCategories());
+            log.info("📊 TeamService: Categories size: {}, Categories content: {}",
+                    team.getCategories() != null ? team.getCategories().size() : "null",
+                    team.getCategories());
+        } else {
+            log.warn("❌ TeamService: No team found with ID: {}", teamId);
+        }
+
+        return teamOpt;
+    }
+
+    /**
      * Update existing team (does NOT create new team)
      */
     @Transactional
@@ -197,11 +225,11 @@ public class TeamService {
     }
 
     /**
-     * Get team by ID for assignment-service
+     * Get team by ID for assignment-service (returns DTO)
      */
     @Transactional(readOnly = true)
-    public com.itsm.user.interfaces.dto.TeamResponseDTO getTeamById(UUID teamId) {
-        log.debug("Getting team by ID: {}", teamId);
+    public com.itsm.user.interfaces.dto.TeamResponseDTO getTeamByIdForAssignment(UUID teamId) {
+        log.debug("Getting team by ID for assignment-service: {}", teamId);
         Team team = teamRepository.findById(teamId)
                 .orElseThrow(() -> new RuntimeException("Team not found: " + teamId));
 

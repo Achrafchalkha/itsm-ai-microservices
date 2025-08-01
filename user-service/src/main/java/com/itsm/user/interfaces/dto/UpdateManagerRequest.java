@@ -29,8 +29,7 @@ public class UpdateManagerRequest {
     @Size(max = 255, message = "L'email ne peut pas dépasser 255 caractères")
     private String email;
 
-    @Size(min = 6, max = 100, message = "Le mot de passe doit contenir entre 6 et 100 caractères")
-    private String motDePasse;  // Optional - only if changing password
+    // Password updates should be handled through a separate endpoint for security
 
     @Size(max = 255, message = "La localisation ne peut pas dépasser 255 caractères")
     private String localisation;

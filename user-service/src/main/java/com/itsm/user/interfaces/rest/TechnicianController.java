@@ -54,19 +54,71 @@ public class TechnicianController {
     }
 
     /**
-     * Get all technicians (ADMIN or MANAGER)
+     * Debug endpoint to check authentication
+     */
+    @GetMapping("/debug-auth")
+    public ResponseEntity<Map<String, Object>> debugAuth() {
+        log.info("=== DEBUG AUTH START ===");
+
+        Map<String, Object> debug = new HashMap<>();
+
+        try {
+            UUID userId = securityService.getCurrentUserId();
+            String userRole = securityService.getCurrentUserRole();
+
+            debug.put("userId", userId);
+            debug.put("userRole", userRole);
+            debug.put("hasManagerRole", "ROLE_MANAGER".equals(userRole));
+            debug.put("timestamp", java.time.LocalDateTime.now());
+
+            log.info("Debug Auth - UserId: {}, Role: {}", userId, userRole);
+
+        } catch (Exception e) {
+            debug.put("error", e.getMessage());
+            log.error("Debug Auth Error: {}", e.getMessage(), e);
+        }
+
+        log.info("=== DEBUG AUTH END ===");
+        return ResponseEntity.ok(debug);
+    }
+
+    /**
+     * Get technicians for current manager's team
      */
     @GetMapping
-    @PreAuthorize("hasAuthority('ROLE_ADMIN') or hasAuthority('ROLE_MANAGER')")
+    @PreAuthorize("hasAuthority('MANAGER')")
     public ResponseEntity<List<UtilisateurDto>> getAllTechnicians() {
-        log.info("Getting all technicians");
-        
-        List<Utilisateur> technicians = technicianService.getAllTechnicians();
-        List<UtilisateurDto> technicianDtos = technicians.stream()
-                .map(this::toDto)
-                .collect(Collectors.toList());
-        
-        return ResponseEntity.ok(technicianDtos);
+        log.info("=== GET TECHNICIANS START ===");
+        log.info("Manager requesting technicians from their team");
+
+        // Get current manager ID from security context
+        UUID managerId = securityService.getCurrentUserId();
+        String userRole = securityService.getCurrentUserRole();
+
+        log.info("Current User - ID: {}, Role: {}", managerId, userRole);
+
+        if (managerId == null) {
+            log.error("Manager ID not found in security context");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        try {
+            // Get technicians from manager's team only
+            List<Utilisateur> technicians = technicianService.getTechniciansByManagerTeam(managerId);
+
+            List<UtilisateurDto> technicianDtos = technicians.stream()
+                    .map(this::toDto)
+                    .collect(Collectors.toList());
+
+            log.info("Returning {} technicians for manager: {}", technicianDtos.size(), managerId);
+            log.info("=== GET TECHNICIANS SUCCESS ===");
+            return ResponseEntity.ok(technicianDtos);
+
+        } catch (Exception e) {
+            log.error("=== GET TECHNICIANS ERROR ===");
+            log.error("Error getting technicians for manager {}: {}", managerId, e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
     }
 
     /**

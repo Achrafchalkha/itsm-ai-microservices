@@ -91,7 +91,8 @@ public class TicketController {
                 finalCategory,
                 utilisateurId,
                 utilisateurEmail,
-                request.isEnableNlp()
+                request.isEnableNlp(),
+                request.getFichiersAttaches()
             );
             
             // Build response
@@ -242,6 +243,8 @@ public class TicketController {
         
         @lombok.Builder.Default
         private boolean enableNlp = true; // Enable NLP by default
+
+        private String fichiersAttaches; // JSON string of attached files
     }
     
     /**

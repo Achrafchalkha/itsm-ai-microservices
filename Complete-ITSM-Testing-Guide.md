@@ -90,7 +90,7 @@ Content-Type: application/json
 {
   "token": "eyJhbGciOiJIUzI1NiJ9...",
   "user": {
-    "id": "manager-uuid",
+    "id": "manager-uuid"
     "nom": "Dupont",
     "prenom": "Jean",
     "email": "manager@itsm.com",

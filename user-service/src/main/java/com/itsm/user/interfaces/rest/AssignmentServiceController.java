@@ -186,11 +186,11 @@ public class AssignmentServiceController {
     @GetMapping("/teams/{teamId}")
     public ResponseEntity<TeamResponseDTO> getTeamById(@PathVariable UUID teamId) {
         log.info("Assignment-service requesting team: {}", teamId);
-        
+
         try {
-            TeamResponseDTO team = teamService.getTeamById(teamId);
+            TeamResponseDTO team = teamService.getTeamByIdForAssignment(teamId);
             return ResponseEntity.ok(team);
-            
+
         } catch (Exception e) {
             log.error("Error retrieving team {} for assignment-service: {}", teamId, e.getMessage(), e);
             return ResponseEntity.notFound().build();

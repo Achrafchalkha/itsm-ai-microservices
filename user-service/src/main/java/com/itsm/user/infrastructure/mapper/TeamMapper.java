@@ -2,6 +2,7 @@ package com.itsm.user.infrastructure.mapper;
 
 import com.itsm.user.domain.model.Team;
 import com.itsm.user.infrastructure.persistence.JpaTeamEntity;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -12,6 +13,7 @@ import java.util.stream.Collectors;
  * Handles the translation between domain and infrastructure layers
  */
 @Component
+@Slf4j
 public class TeamMapper {
     
     /**
@@ -21,8 +23,11 @@ public class TeamMapper {
         if (entity == null) {
             return null;
         }
-        
-        return Team.builder()
+
+        log.debug("🔄 TeamMapper: Converting entity to domain - ID: {}, Categories from entity: {}",
+                entity.getId(), entity.getCategories());
+
+        Team team = Team.builder()
                 .id(entity.getId())
                 .nom(entity.getNom())
                 .description(entity.getDescription())
@@ -33,6 +38,11 @@ public class TeamMapper {
                 .dateModification(entity.getDateModification())
                 .actif(entity.isActif())
                 .build();
+
+        log.debug("✅ TeamMapper: Converted to domain - ID: {}, Categories in domain: {}",
+                team.getId(), team.getCategories());
+
+        return team;
     }
     
     /**

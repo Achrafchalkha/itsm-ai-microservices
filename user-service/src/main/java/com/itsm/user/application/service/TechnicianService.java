@@ -287,6 +287,30 @@ public class TechnicianService {
     }
 
     /**
+     * Get technicians by manager's team
+     */
+    @Transactional(readOnly = true)
+    public List<Utilisateur> getTechniciansByManagerTeam(UUID managerId) {
+        log.debug("Getting technicians for manager's team: {}", managerId);
+
+        // First get the manager to find their team
+        Utilisateur manager = utilisateurRepository.findById(managerId)
+                .orElseThrow(() -> new IllegalArgumentException("Manager non trouvé: " + managerId));
+
+        if (manager.getRole() != Role.MANAGER) {
+            throw new IllegalArgumentException("L'utilisateur n'est pas un manager: " + managerId);
+        }
+
+        if (manager.getTeamId() == null) {
+            log.warn("Manager {} n'a pas d'équipe assignée", managerId);
+            return List.of();
+        }
+
+        // Get technicians from the manager's team
+        return utilisateurRepository.findByTeamIdAndRole(manager.getTeamId(), Role.TECHNICIEN);
+    }
+
+    /**
      * Get available technicians (active and not assigned to tickets)
      */
     @Transactional(readOnly = true)
