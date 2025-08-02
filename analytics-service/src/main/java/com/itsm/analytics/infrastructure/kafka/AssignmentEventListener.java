@@ -32,7 +32,7 @@ public class AssignmentEventListener {
     @KafkaListener(topics = "assignment.created", groupId = "analytics-service-group")
     public void handleAssignmentCreated(@Payload Map<String, Object> assignmentData,
                                        @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-                                       @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
+                                       @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
                                        @Header(KafkaHeaders.OFFSET) long offset,
                                        Acknowledgment acknowledgment) {
         

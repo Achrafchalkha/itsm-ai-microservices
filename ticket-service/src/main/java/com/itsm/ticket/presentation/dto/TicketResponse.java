@@ -49,7 +49,10 @@ public class TicketResponse {
     
     // Resolution information
     private String commentaireResolution;
-    
+
+    // File attachments
+    private String fichiersAttaches;  // JSON array of attached files
+
     // Additional fields for technician view
     private String statutSla;
     private String urgencyLevel;

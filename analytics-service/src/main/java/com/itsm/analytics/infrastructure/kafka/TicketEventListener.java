@@ -33,7 +33,7 @@ public class TicketEventListener {
     @KafkaListener(topics = "ticket.created", groupId = "analytics-service-group")
     public void handleTicketCreated(@Payload Map<String, Object> ticketData,
                                    @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
-                                   @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition,
+                                   @Header(KafkaHeaders.RECEIVED_PARTITION) int partition,
                                    @Header(KafkaHeaders.OFFSET) long offset,
                                    Acknowledgment acknowledgment) {
         

@@ -13,6 +13,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -72,7 +73,9 @@ public class KPICalculationEngine {
         log.info("Calculating team performance for team: {} from {} to {}", teamId, startDate, endDate);
         
         try {
-            TeamPerformanceMetrics metrics = TeamPerformanceMetrics.creerMetriquesEquipe(teamId, startDate, endDate);
+            // Determine period type based on date range
+            TeamPerformanceMetrics.PeriodeType periodeType = determinePeriodeType(startDate, endDate);
+            TeamPerformanceMetrics metrics = TeamPerformanceMetrics.creerMetriquesEquipe(teamId, startDate, endDate, periodeType);
             
             LocalDateTime startDateTime = startDate.atStartOfDay();
             LocalDateTime endDateTime = endDate.atTime(23, 59, 59);
@@ -367,5 +370,24 @@ public class KPICalculationEngine {
         
         public Map<String, Object> getTeamMetrics() { return teamMetrics; }
         public void setTeamMetrics(Map<String, Object> teamMetrics) { this.teamMetrics = teamMetrics; }
+    }
+
+    /**
+     * Determine the period type based on the date range
+     */
+    private TeamPerformanceMetrics.PeriodeType determinePeriodeType(LocalDate startDate, LocalDate endDate) {
+        long daysBetween = ChronoUnit.DAYS.between(startDate, endDate);
+
+        if (daysBetween <= 1) {
+            return TeamPerformanceMetrics.PeriodeType.DAILY;
+        } else if (daysBetween <= 7) {
+            return TeamPerformanceMetrics.PeriodeType.WEEKLY;
+        } else if (daysBetween <= 31) {
+            return TeamPerformanceMetrics.PeriodeType.MONTHLY;
+        } else if (daysBetween <= 92) {
+            return TeamPerformanceMetrics.PeriodeType.QUARTERLY;
+        } else {
+            return TeamPerformanceMetrics.PeriodeType.YEARLY;
+        }
     }
 }

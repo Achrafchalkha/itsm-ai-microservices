@@ -91,7 +91,7 @@ class AnalyticsServiceIntegrationTest {
         // Get all configurations
         mockMvc.perform(get("/api/analytics/sla-configurations")
                 .with(csrf()))
-                .andExpected(status().isOk())
+                .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$.length()").value(1));
     }

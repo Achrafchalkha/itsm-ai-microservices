@@ -84,4 +84,20 @@ public class SecurityService {
         String currentRole = getCurrentUserRole();
         return currentRole != null && currentRole.equals(role);
     }
+
+    /**
+     * Check if the current user is the same as the provided user ID
+     * Used in @PreAuthorize annotations
+     */
+    public boolean isCurrentUser(UUID userId) {
+        try {
+            UUID currentUserId = getCurrentUserId();
+            boolean isCurrentUser = userId != null && userId.equals(currentUserId);
+            log.debug("Checking if user {} is current user {}: {}", userId, currentUserId, isCurrentUser);
+            return isCurrentUser;
+        } catch (Exception e) {
+            log.error("Error checking if current user: {}", e.getMessage(), e);
+            return false;
+        }
+    }
 }

@@ -24,29 +24,56 @@ public class TeamPerformanceMetrics {
     private UUID teamId;
     private LocalDate dateDebut;
     private LocalDate dateFin;
+    private PeriodeType periodeType;
     
     // Ticket volume
     private Integer ticketsAssigned;
     private Integer ticketsResolved;
     private Integer ticketsInProgress;
+
+    // Additional ticket metrics
+    private Integer totalTicketsAssigned;
+    private Integer totalTicketsResolved;
+    private Integer totalTicketsClosed;
     
     // SLA performance
     private BigDecimal slaComplianceRate;
     private BigDecimal averageResolutionTimeMinutes;
     private BigDecimal averageFirstResponseTimeMinutes;
+    private Integer ticketsWithinSla;
+    private Integer ticketsBreachedSla;
     
+    // Assignment metrics
+    private Integer totalAssignments;
+    private Integer totalReassignments;
+
     // Workload distribution
     private Integer totalWorkload;
     private BigDecimal averageWorkloadPerTechnician;
     private Integer maxWorkloadTechnician;
     private Integer minWorkloadTechnician;
+    private BigDecimal averageWorkload;
+    private Integer maxWorkload;
+    private Integer minWorkload;
+
+    // Team composition
+    private Integer totalTechnicians;
+    private Integer activeTechnicians;
     
     // Satisfaction
     private BigDecimal averageSatisfactionScore;
     private Integer totalSatisfactionResponses;
-    
+
     // Reassignment rate
     private BigDecimal reassignmentRate;
+
+    // Performance level
+    private PerformanceLevel performanceLevel;
+
+    // Detailed metrics (JSON)
+    private String categoryBreakdownJson;
+    private String priorityBreakdownJson;
+    private String technicianMetricsJson;
     
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
@@ -54,17 +81,25 @@ public class TeamPerformanceMetrics {
     /**
      * Factory method to create team performance metrics for a period
      */
-    public static TeamPerformanceMetrics creerMetriquesEquipe(UUID teamId, LocalDate dateDebut, LocalDate dateFin) {
+    public static TeamPerformanceMetrics creerMetriquesEquipe(UUID teamId, LocalDate dateDebut, LocalDate dateFin, PeriodeType periodeType) {
         return TeamPerformanceMetrics.builder()
                 .id(UUID.randomUUID())
                 .teamId(teamId)
                 .dateDebut(dateDebut)
                 .dateFin(dateFin)
+                .periodeType(periodeType)
                 .ticketsAssigned(0)
                 .ticketsResolved(0)
                 .ticketsInProgress(0)
+                .totalTicketsAssigned(0)
+                .totalTicketsResolved(0)
+                .totalTicketsClosed(0)
                 .totalWorkload(0)
                 .totalSatisfactionResponses(0)
+                .totalAssignments(0)
+                .totalReassignments(0)
+                .totalTechnicians(0)
+                .activeTechnicians(0)
                 .createdAt(LocalDateTime.now())
                 .updatedAt(LocalDateTime.now())
                 .build();
@@ -162,6 +197,38 @@ public class TeamPerformanceMetrics {
         return PerformanceLevel.CRITIQUE;
     }
     
+    /**
+     * Enum for period types
+     */
+    public enum PeriodeType {
+        DAILY("DAILY", "Quotidien"),
+        WEEKLY("WEEKLY", "Hebdomadaire"),
+        MONTHLY("MONTHLY", "Mensuel"),
+        QUARTERLY("QUARTERLY", "Trimestriel"),
+        YEARLY("YEARLY", "Annuel");
+
+        private final String code;
+        private final String description;
+
+        PeriodeType(String code, String description) {
+            this.code = code;
+            this.description = description;
+        }
+
+        public String getCode() {
+            return code;
+        }
+
+        public String getDescription() {
+            return description;
+        }
+
+        @Override
+        public String toString() {
+            return code;
+        }
+    }
+
     /**
      * Enum for performance levels
      */

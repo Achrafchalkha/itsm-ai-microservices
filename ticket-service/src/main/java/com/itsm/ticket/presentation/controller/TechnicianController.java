@@ -275,6 +275,7 @@ public class TechnicianController {
                 .datePremiereReponse(ticket.getDatePremiereReponse())
                 .slaRespecte(ticket.getSlaRespecte())
                 .tempsResolutionMinutes(ticket.getTempsResolutionMinutes())
+                .fichiersAttaches(ticket.getFichiersAttaches())
                 .tempsPremiereReponseMinutes(ticket.getTempsPremiereReponseMinutes())
                 .nombreReassignations(ticket.getNombreReassignations())
                 .enableNlp(ticket.getEnableNlp())
@@ -283,7 +284,108 @@ public class TechnicianController {
                 .statutSla(ticket.getStatutSla() != null ? ticket.getStatutSla().name() : null)
                 .build();
     }
-    
+
+    /**
+     * Download file attachment for technician from a specific ticket
+     */
+    @GetMapping("/tickets/{ticketId}/files/{fileName}")
+    @PreAuthorize("hasRole('TECHNICIEN')")
+    public ResponseEntity<org.springframework.core.io.Resource> downloadFileForTechnician(
+            @PathVariable UUID ticketId,
+            @PathVariable String fileName) {
+        try {
+            log.debug("Technician downloading file: {} from ticket: {}", fileName, ticketId);
+
+            // Get current technician ID
+            UUID technicianId = securityService.getCurrentUserId();
+            if (technicianId == null) {
+                log.error("No current technician found for file download");
+                return ResponseEntity.status(org.springframework.http.HttpStatus.UNAUTHORIZED).build();
+            }
+
+            // Get the specific ticket and verify technician is assigned
+            Ticket ticket = ticketService.getTicketById(ticketId);
+            if (ticket == null) {
+                log.error("Ticket not found: {}", ticketId);
+                return ResponseEntity.notFound().build();
+            }
+
+            // Verify that the current technician is assigned to this ticket
+            if (ticket.getTechnicienId() == null || !ticket.getTechnicienId().equals(technicianId)) {
+                log.error("Technician {} not assigned to ticket {}", technicianId, ticketId);
+                return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+            }
+
+            // Check if ticket has attached files
+            if (ticket.getFichiersAttaches() == null || ticket.getFichiersAttaches().trim().isEmpty()) {
+                log.error("No files attached to ticket {}", ticketId);
+                return ResponseEntity.notFound().build();
+            }
+
+            try {
+                // Parse the attached files JSON
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                java.util.List<java.util.Map<String, Object>> files = mapper.readValue(
+                    ticket.getFichiersAttaches(),
+                    new com.fasterxml.jackson.core.type.TypeReference<java.util.List<java.util.Map<String, Object>>>() {}
+                );
+
+                // Look for the requested file
+                for (java.util.Map<String, Object> fileInfo : files) {
+                    String filePath = (String) fileInfo.get("filePath");
+                    String storedFileName = (String) fileInfo.get("fileName");
+
+                    if (filePath != null && storedFileName != null) {
+                        // Compare with the fileName stored in database, not the physical filename
+                        log.debug("Comparing requested file '{}' with stored fileName '{}'", fileName, storedFileName);
+
+                        if (storedFileName.equals(fileName)) {
+                            // File found, prepare for download
+                            java.nio.file.Path fullFilePath = java.nio.file.Paths.get("uploads").resolve(filePath);
+
+                            org.springframework.core.io.Resource resource = new org.springframework.core.io.UrlResource(fullFilePath.toUri());
+
+                            if (resource.exists() && resource.isReadable()) {
+                                // Determine content type
+                                String contentType = java.nio.file.Files.probeContentType(fullFilePath);
+                                if (contentType == null) {
+                                    contentType = "application/octet-stream";
+                                }
+
+                                // Use original name for download
+                                String originalName = (String) fileInfo.get("originalName");
+                                String downloadName = originalName != null ? originalName : fileName;
+
+                                log.info("Technician {} downloading file: {} (original: {}) from ticket: {}",
+                                        technicianId, fileName, downloadName, ticketId);
+
+                                return ResponseEntity.ok()
+                                        .contentType(org.springframework.http.MediaType.parseMediaType(contentType))
+                                        .header(org.springframework.http.HttpHeaders.CONTENT_DISPOSITION,
+                                               "attachment; filename=\"" + downloadName + "\"")
+                                        .body(resource);
+                            } else {
+                                log.error("File exists in database but not on disk: {}", fullFilePath);
+                                return ResponseEntity.notFound().build();
+                            }
+                        }
+                    }
+                }
+
+                log.error("File {} not found in ticket {}", fileName, ticketId);
+                return ResponseEntity.notFound().build();
+
+            } catch (Exception e) {
+                log.error("Error parsing attached files for ticket {}: {}", ticketId, e.getMessage());
+                return ResponseEntity.internalServerError().build();
+            }
+
+        } catch (Exception e) {
+            log.error("Error downloading file {} from ticket {} for technician: {}", fileName, ticketId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
     // DTO Classes
     @lombok.Data
     @lombok.Builder
