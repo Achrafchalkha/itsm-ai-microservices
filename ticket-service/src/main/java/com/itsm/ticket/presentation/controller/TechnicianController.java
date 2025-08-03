@@ -101,7 +101,7 @@ public class TechnicianController {
     }
     
     /**
-     * Start working on a ticket (change status to OUVERT)
+     * Start working on a ticket (change status from EN_COURS to OUVERT)
      */
     @PutMapping("/tickets/{ticketId}/start")
     @PreAuthorize("hasRole('TECHNICIEN')")

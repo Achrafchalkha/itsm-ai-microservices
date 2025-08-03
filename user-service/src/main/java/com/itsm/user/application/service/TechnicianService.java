@@ -402,6 +402,17 @@ public class TechnicianService {
     }
 
     /**
+     * Update technician profile (for technician's own profile updates)
+     */
+    @Transactional
+    public Utilisateur updateTechnicianProfile(Utilisateur technician) {
+        log.debug("Updating technician profile: {}", technician.getId());
+
+        technician.mettreAJour();
+        return utilisateurRepository.save(technician);
+    }
+
+    /**
      * Update technician workload for assignment-service
      */
     @Transactional
