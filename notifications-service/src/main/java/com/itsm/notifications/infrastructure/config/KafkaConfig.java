@@ -3,6 +3,8 @@ package com.itsm.notifications.infrastructure.config;
 import com.itsm.notifications.infrastructure.kafka.event.AssignmentCreatedEvent;
 import com.itsm.notifications.infrastructure.kafka.event.AssignmentFailedEvent;
 import com.itsm.notifications.infrastructure.kafka.event.AssignmentReassignedEvent;
+import com.itsm.notifications.infrastructure.kafka.event.TicketStatusChangedEvent;
+import com.itsm.notifications.infrastructure.kafka.event.TicketNoteAddedEvent;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.springframework.beans.factory.annotation.Value;
@@ -103,10 +105,60 @@ public class KafkaConfig {
         configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
         configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
         
-        return new DefaultKafkaConsumerFactory<>(configProps, new StringDeserializer(), 
+        return new DefaultKafkaConsumerFactory<>(configProps, new StringDeserializer(),
                 new JsonDeserializer<>(AssignmentFailedEvent.class, false));
     }
-    
+
+    /**
+     * Consumer factory for TicketStatusChangedEvent with type mapping
+     */
+    @Bean
+    public ConsumerFactory<String, TicketStatusChangedEvent> ticketStatusChangedConsumerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+
+        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, TicketStatusChangedEvent.class.getName());
+
+        // Map ticket-service's TicketStatusChangedEvent to notifications-service's TicketStatusChangedEvent
+        configProps.put(JsonDeserializer.TYPE_MAPPINGS,
+            "com.itsm.ticket.infrastructure.kafka.event.TicketStatusChangedEvent:" + TicketStatusChangedEvent.class.getName());
+
+        configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+
+        return new DefaultKafkaConsumerFactory<>(configProps, new StringDeserializer(),
+                new JsonDeserializer<>(TicketStatusChangedEvent.class, false));
+    }
+
+    /**
+     * Consumer factory for TicketNoteAddedEvent with type mapping
+     */
+    @Bean
+    public ConsumerFactory<String, TicketNoteAddedEvent> ticketNoteAddedConsumerFactory() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG, bootstrapServers);
+        configProps.put(ConsumerConfig.GROUP_ID_CONFIG, groupId);
+        configProps.put(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, StringDeserializer.class);
+        configProps.put(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, JsonDeserializer.class);
+
+        configProps.put(JsonDeserializer.TRUSTED_PACKAGES, "*");
+        configProps.put(JsonDeserializer.VALUE_DEFAULT_TYPE, TicketNoteAddedEvent.class.getName());
+
+        // Map ticket-service's TicketNoteAddedEvent to notifications-service's TicketNoteAddedEvent
+        configProps.put(JsonDeserializer.TYPE_MAPPINGS,
+            "com.itsm.ticket.infrastructure.kafka.event.TicketNoteAddedEvent:" + TicketNoteAddedEvent.class.getName());
+
+        configProps.put(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
+        configProps.put(ConsumerConfig.ENABLE_AUTO_COMMIT_CONFIG, false);
+
+        return new DefaultKafkaConsumerFactory<>(configProps, new StringDeserializer(),
+                new JsonDeserializer<>(TicketNoteAddedEvent.class, false));
+    }
+
     /**
      * Kafka listener container factory for AssignmentCreatedEvent
      */
@@ -138,9 +190,35 @@ public class KafkaConfig {
      */
     @Bean
     public ConcurrentKafkaListenerContainerFactory<String, AssignmentFailedEvent> assignmentFailedKafkaListenerContainerFactory() {
-        ConcurrentKafkaListenerContainerFactory<String, AssignmentFailedEvent> factory = 
+        ConcurrentKafkaListenerContainerFactory<String, AssignmentFailedEvent> factory =
                 new ConcurrentKafkaListenerContainerFactory<>();
         factory.setConsumerFactory(assignmentFailedConsumerFactory());
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        factory.setCommonErrorHandler(new org.springframework.kafka.listener.DefaultErrorHandler());
+        return factory;
+    }
+
+    /**
+     * Kafka listener container factory for TicketStatusChangedEvent
+     */
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, TicketStatusChangedEvent> ticketStatusChangedKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, TicketStatusChangedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(ticketStatusChangedConsumerFactory());
+        factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
+        factory.setCommonErrorHandler(new org.springframework.kafka.listener.DefaultErrorHandler());
+        return factory;
+    }
+
+    /**
+     * Kafka listener container factory for TicketNoteAddedEvent
+     */
+    @Bean
+    public ConcurrentKafkaListenerContainerFactory<String, TicketNoteAddedEvent> ticketNoteAddedKafkaListenerContainerFactory() {
+        ConcurrentKafkaListenerContainerFactory<String, TicketNoteAddedEvent> factory =
+                new ConcurrentKafkaListenerContainerFactory<>();
+        factory.setConsumerFactory(ticketNoteAddedConsumerFactory());
         factory.getContainerProperties().setAckMode(ContainerProperties.AckMode.MANUAL_IMMEDIATE);
         factory.setCommonErrorHandler(new org.springframework.kafka.listener.DefaultErrorHandler());
         return factory;

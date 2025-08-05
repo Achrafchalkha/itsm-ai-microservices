@@ -2,6 +2,10 @@ package com.itsm.user.interfaces.rest;
 
 import com.itsm.user.application.service.TechnicianService;
 import com.itsm.user.application.service.TeamService;
+import com.itsm.user.application.service.ManagerService;
+import com.itsm.user.domain.repository.UtilisateurRepository;
+import com.itsm.user.domain.model.Utilisateur;
+import com.itsm.user.domain.model.Role;
 import com.itsm.user.interfaces.dto.TechnicianResponseDTO;
 import com.itsm.user.interfaces.dto.TeamResponseDTO;
 import lombok.RequiredArgsConstructor;
@@ -11,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Optional;
 
 /**
  * Public endpoints for assignment-service integration
@@ -24,6 +29,8 @@ public class AssignmentServiceController {
     
     private final TechnicianService technicianService;
     private final TeamService teamService;
+    private final ManagerService managerService;
+    private final UtilisateurRepository utilisateurRepository;
     
     /**
      * Get all active teams with their categories
@@ -197,6 +204,188 @@ public class AssignmentServiceController {
         }
     }
     
+    /**
+     * Get manager's team ID by manager ID (simple approach)
+     * Used by ticket-service to get manager's team for filtering tickets
+     * Directly queries utilisateurs table with manager ID to get team_id
+     */
+    @GetMapping("/managers/{managerId}/team")
+    public ResponseEntity<UUID> getManagerTeamId(@PathVariable UUID managerId) {
+        log.info("Ticket-service requesting team ID for manager: {}", managerId);
+
+        try {
+            // Simple approach: get manager by ID from utilisateurs table and return team_id
+            Optional<Utilisateur> managerOpt = utilisateurRepository.findById(managerId);
+            if (managerOpt.isEmpty()) {
+                log.warn("Manager not found in utilisateurs table: {}", managerId);
+                return ResponseEntity.notFound().build();
+            }
+
+            Utilisateur manager = managerOpt.get();
+            UUID teamId = manager.getTeamId();
+
+            if (teamId == null) {
+                log.warn("No team assigned to manager: {}", managerId);
+                return ResponseEntity.notFound().build();
+            }
+
+            log.info("Found team {} for manager {}", teamId, managerId);
+            return ResponseEntity.ok(teamId);
+
+        } catch (Exception e) {
+            log.error("Error retrieving team for manager {} by ticket-service: {}", managerId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Get technician basic info by technician ID (simple approach)
+     * Used by ticket-service to get technician details for ticket display
+     * Directly queries utilisateurs table with technician ID
+     */
+    @GetMapping("/technicians/{technicianId}/info")
+    public ResponseEntity<TechnicianBasicInfo> getTechnicianBasicInfo(@PathVariable UUID technicianId) {
+        log.info("Ticket-service requesting basic info for technician: {}", technicianId);
+
+        try {
+            // Simple approach: get technician by ID from utilisateurs table
+            Optional<Utilisateur> technicianOpt = utilisateurRepository.findById(technicianId);
+            if (technicianOpt.isEmpty()) {
+                log.warn("Technician not found in utilisateurs table: {}", technicianId);
+                return ResponseEntity.notFound().build();
+            }
+
+            Utilisateur technician = technicianOpt.get();
+
+            // Create basic info response
+            TechnicianBasicInfo basicInfo = new TechnicianBasicInfo(
+                technician.getId(),
+                technician.getNom(),
+                technician.getPrenom(),
+                technician.getEmail(),
+                technician.getSpecialite(),
+                technician.getTeamId()
+            );
+
+            log.info("Found technician info for {}: {} {}", technicianId, technician.getPrenom(), technician.getNom());
+            return ResponseEntity.ok(basicInfo);
+
+        } catch (Exception e) {
+            log.error("Error retrieving technician info for {} by ticket-service: {}", technicianId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Basic technician info DTO for ticket display
+     */
+    public static class TechnicianBasicInfo {
+        private UUID id;
+        private String nom;
+        private String prenom;
+        private String email;
+        private String specialite;
+        private UUID teamId;
+
+        public TechnicianBasicInfo(UUID id, String nom, String prenom, String email, String specialite, UUID teamId) {
+            this.id = id;
+            this.nom = nom;
+            this.prenom = prenom;
+            this.email = email;
+            this.specialite = specialite;
+            this.teamId = teamId;
+        }
+
+        // Getters
+        public UUID getId() { return id; }
+        public String getNom() { return nom; }
+        public String getPrenom() { return prenom; }
+        public String getEmail() { return email; }
+        public String getSpecialite() { return specialite; }
+        public UUID getTeamId() { return teamId; }
+    }
+
+    /**
+     * Get team manager information by team ID
+     * Used by notifications-service to get manager for team notifications
+     */
+    @GetMapping("/teams/{teamId}/manager")
+    public ResponseEntity<TeamManagerInfo> getTeamManager(@PathVariable UUID teamId) {
+        log.info("🔔 MANAGER REQUEST: Notifications-service requesting manager info for team: {}", teamId);
+
+        try {
+            // Find manager by team ID
+            log.info("🔍 SEARCHING: Looking for managers with teamId={} and role=MANAGER", teamId);
+            List<Utilisateur> managers = utilisateurRepository.findByTeamIdAndRole(teamId, Role.MANAGER);
+            log.info("🔍 SEARCH RESULT: Found {} managers for team {}", managers.size(), teamId);
+
+            if (managers.isEmpty()) {
+                log.warn("❌ NO MANAGER: No manager found for team: {}", teamId);
+                return ResponseEntity.notFound().build();
+            }
+
+            Utilisateur manager = managers.get(0); // Get the first manager
+            log.info("✅ MANAGER SELECTED: Using manager {} ({} {}) for team {}",
+                    manager.getId(), manager.getPrenom(), manager.getNom(), teamId);
+
+            // Create manager info response
+            TeamManagerInfo managerInfo = new TeamManagerInfo(
+                manager.getId(),
+                manager.getPrenom() + " " + manager.getNom(),
+                manager.getEmail()
+            );
+
+            log.info("✅ MANAGER RESPONSE: Returning manager {} ({}) for team {}",
+                    manager.getId(), managerInfo.getManagerName(), teamId);
+            return ResponseEntity.ok(managerInfo);
+
+        } catch (Exception e) {
+            log.error("❌ MANAGER ERROR: Error retrieving manager for team {}: {}", teamId, e.getMessage(), e);
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    /**
+     * Team manager info DTO
+     */
+    public static class TeamManagerInfo {
+        private UUID managerId;
+        private String managerName;
+        private String managerEmail;
+
+        public TeamManagerInfo() {}
+
+        public TeamManagerInfo(UUID managerId, String managerName, String managerEmail) {
+            this.managerId = managerId;
+            this.managerName = managerName;
+            this.managerEmail = managerEmail;
+        }
+
+        public UUID getManagerId() {
+            return managerId;
+        }
+
+        public void setManagerId(UUID managerId) {
+            this.managerId = managerId;
+        }
+
+        public String getManagerName() {
+            return managerName;
+        }
+
+        public void setManagerName(String managerName) {
+            this.managerName = managerName;
+        }
+
+        public String getManagerEmail() {
+            return managerEmail;
+        }
+
+        public void setManagerEmail(String managerEmail) {
+            this.managerEmail = managerEmail;
+        }
+    }
+
     /**
      * Health check endpoint for assignment-service
      */

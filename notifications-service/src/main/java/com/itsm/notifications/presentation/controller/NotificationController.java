@@ -3,15 +3,24 @@ package com.itsm.notifications.presentation.controller;
 import com.itsm.notifications.application.service.NotificationService;
 import com.itsm.notifications.domain.model.Notification;
 import com.itsm.notifications.presentation.dto.NotificationDTO;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.security.Keys;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -25,8 +34,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 public class NotificationController {
-    
+
     private final NotificationService notificationService;
+
+    @Value("${jwt.secret}")
+    private String jwtSecret;
     
     /**
      * Get notifications for the current user
@@ -37,8 +49,12 @@ public class NotificationController {
             Authentication authentication,
             @RequestParam(defaultValue = "false") boolean unreadOnly,
             @RequestParam(defaultValue = "50") int limit) {
-        
+
+        log.info("🔔 getUserNotifications called - Authentication: {}", authentication.getName());
+        log.info("🔔 Authentication authorities: {}", authentication.getAuthorities());
+
         UUID userId = extractUserIdFromAuth(authentication);
+        log.info("🔔 Extracted userId: {} for user: {}", userId, authentication.getName());
         log.debug("Getting notifications for user: {}, unreadOnly: {}, limit: {}", userId, unreadOnly, limit);
         
         try {
@@ -203,12 +219,38 @@ public class NotificationController {
     
     /**
      * Extract user ID from authentication
-     * In a real implementation, this would extract from JWT claims
+     * Extracts userId from JWT claims
      */
     private UUID extractUserIdFromAuth(Authentication authentication) {
-        // For now, return a dummy UUID
-        // In real implementation, extract from JWT token or security context
-        return UUID.fromString("123e4567-e89b-12d3-a456-426614174000");
+        try {
+            // Get the Authorization header from the current request
+            HttpServletRequest request = ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
+            String authHeader = request.getHeader("Authorization");
+
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                String token = authHeader.substring(7);
+
+                // Parse JWT token to extract userId
+                SecretKey key = Keys.hmacShaKeyFor(jwtSecret.getBytes(StandardCharsets.UTF_8));
+                Claims claims = Jwts.parserBuilder()
+                        .setSigningKey(key)
+                        .build()
+                        .parseClaimsJws(token)
+                        .getBody();
+
+                String userIdStr = claims.get("userId", String.class);
+                if (userIdStr != null) {
+                    return UUID.fromString(userIdStr);
+                }
+            }
+
+            log.warn("Could not extract userId from authentication");
+            throw new RuntimeException("User ID not found in authentication");
+
+        } catch (Exception e) {
+            log.error("Error extracting user ID from authentication: {}", e.getMessage());
+            throw new RuntimeException("Invalid authentication", e);
+        }
     }
     
     /**

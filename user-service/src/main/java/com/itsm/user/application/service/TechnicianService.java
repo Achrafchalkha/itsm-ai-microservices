@@ -506,4 +506,6 @@ public class TechnicianService {
                 .actif(utilisateur.isActif())
                 .build();
     }
+
+
 }

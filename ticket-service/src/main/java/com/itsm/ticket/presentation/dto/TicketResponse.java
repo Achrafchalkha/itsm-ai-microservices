@@ -58,6 +58,12 @@ public class TicketResponse {
     private String urgencyLevel;
     private Boolean isOverdue;
     private Integer minutesUntilSlaDeadline;
+
+    // Technician information (fetched from user-service)
+    private String technicienNom;
+    private String technicienPrenom;
+    private String technicienEmail;
+    private String technicienSpecialite;
     
     /**
      * Check if ticket is overdue

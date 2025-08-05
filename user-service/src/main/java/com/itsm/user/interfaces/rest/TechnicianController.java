@@ -86,7 +86,7 @@ public class TechnicianController {
      * Get technicians for current manager's team
      */
     @GetMapping
-    @PreAuthorize("hasAuthority('MANAGER')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGER')")
     public ResponseEntity<List<UtilisateurDto>> getAllTechnicians() {
         log.info("=== GET TECHNICIANS START ===");
         log.info("Manager requesting technicians from their team");

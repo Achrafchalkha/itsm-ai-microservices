@@ -3,6 +3,9 @@ package com.itsm.notifications.infrastructure.kafka;
 import com.itsm.notifications.application.service.NotificationService;
 import com.itsm.notifications.infrastructure.kafka.event.AssignmentCreatedEvent;
 import com.itsm.notifications.infrastructure.kafka.event.AssignmentFailedEvent;
+import com.itsm.notifications.infrastructure.kafka.event.TicketNoteAddedEvent;
+import com.itsm.notifications.infrastructure.kafka.event.TicketStatusChangedEvent;
+import com.itsm.notifications.infrastructure.kafka.event.TicketUpdatedEvent;
 import com.itsm.notifications.infrastructure.kafka.event.AssignmentReassignedEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -37,22 +40,43 @@ public class AssignmentEventListener {
             @Header(KafkaHeaders.OFFSET) long offset,
             Acknowledgment acknowledgment) {
         
-        log.info("Received AssignmentCreatedEvent from topic: {}, partition: {}, offset: {}, ticketId: {}, technicianId: {}", 
-                topic, partition, offset, event.getTicketId(), event.getTechnicianId());
+        log.info("🔔 ASSIGNMENT EVENT RECEIVED: topic={}, partition={}, offset={}, ticketId={}, technicianId={}, teamId={}, ticketOwner={}",
+                topic, partition, offset, event.getTicketId(), event.getTechnicianId(), event.getTeamId(), event.getTicketUtilisateurId());
+        log.info("🔔 EVENT DETAILS: ticketTitle='{}', technician='{} {}', priority={}, category={}",
+                event.getTicketTitre(), event.getTechnicianPrenom(), event.getTechnicianNom(),
+                event.getTicketPriorite(), event.getTicketCategorie());
         
         try {
-            // Create notification for assigned technician
+            // Create notification for assigned technician ONLY
+            log.info("🔔 STEP 1: CREATING TECHNICIAN ASSIGNMENT NOTIFICATION");
+            log.info("   → Technician: {}, Ticket: {}, NOT for user: {}",
+                    event.getTechnicianId(), event.getTicketId(), event.getTicketUtilisateurId());
             notificationService.createTicketAssignmentNotification(event);
-            
-            log.info("Successfully created assignment notification for technician: {}", event.getTechnicianId());
-            
+            log.info("✅ STEP 1 COMPLETED: Technician notification created");
+
+            // Create notification for team manager about the assignment ONLY
+            log.info("🔔 STEP 2: CREATING MANAGER ASSIGNMENT NOTIFICATION");
+            log.info("   → Team: {}, Ticket: {}, NOT for user: {}",
+                    event.getTeamId(), event.getTicketId(), event.getTicketUtilisateurId());
+
+            if (event.getTeamId() == null) {
+                log.error("❌ STEP 2 FAILED: TeamId is NULL - cannot find manager");
+            } else {
+                log.info("   → Calling manager notification service...");
+                notificationService.createManagerAssignmentNotification(event);
+                log.info("✅ STEP 2 COMPLETED: Manager notification service called");
+            }
+
+            log.info("✅ ASSIGNMENT EVENT PROCESSING COMPLETED for technician {} and team {} (NOT for user {})",
+                    event.getTechnicianId(), event.getTeamId(), event.getTicketUtilisateurId());
+
             // Acknowledge the message
             acknowledgment.acknowledge();
-            
+
         } catch (Exception e) {
-            log.error("Error processing assignment created event for ticket {}: {}", 
+            log.error("Error processing assignment created event for ticket {}: {}",
                     event.getTicketId(), e.getMessage(), e);
-            
+
             // Acknowledge to avoid infinite retries (notifications are not critical for system operation)
             acknowledgment.acknowledge();
         }
@@ -124,41 +148,74 @@ public class AssignmentEventListener {
             @Payload TicketUpdatedEvent event,
             @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
             Acknowledgment acknowledgment) {
-        
-        log.info("Received TicketUpdatedEvent from topic: {}, ticketId: {}", 
+
+        log.info("Received TicketUpdatedEvent from topic: {}, ticketId: {}",
                 topic, event.getTicketId());
-        
+
         try {
             // Create notification for ticket update (if technician is assigned)
             if (event.getTechnicianId() != null) {
                 notificationService.createTicketUpdateNotification(event);
             }
-            
+
             acknowledgment.acknowledge();
-            
+
         } catch (Exception e) {
-            log.error("Error processing ticket updated event for ticket {}: {}", 
+            log.error("Error processing ticket updated event for ticket {}: {}",
                     event.getTicketId(), e.getMessage(), e);
             acknowledgment.acknowledge();
         }
     }
-    
+
     /**
-     * Event for ticket updates
+     * Handle ticket note added events - notify users when technician adds notes
      */
-    @lombok.Data
-    @lombok.Builder
-    @lombok.NoArgsConstructor
-    @lombok.AllArgsConstructor
-    public static class TicketUpdatedEvent {
-        private java.util.UUID ticketId;
-        private String titre;
-        private String description;
-        private String statut;
-        private String priorite;
-        private java.util.UUID technicianId;
-        private java.util.UUID utilisateurId;
-        private String updateReason;
-        private java.time.LocalDateTime updatedAt;
+    @KafkaListener(topics = "ticket.note.added", groupId = "notifications-service-group",
+                   containerFactory = "ticketNoteAddedKafkaListenerContainerFactory")
+    public void handleTicketNoteAdded(
+            @Payload TicketNoteAddedEvent event,
+            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+            Acknowledgment acknowledgment) {
+
+        log.info("Received TicketNoteAddedEvent from topic: {}, ticketId: {}",
+                topic, event.getTicketId());
+
+        try {
+            // Create notification for user when technician adds note
+            notificationService.createTicketNoteAddedNotification(event);
+
+            acknowledgment.acknowledge();
+
+        } catch (Exception e) {
+            log.error("Error processing ticket note added event for ticket {}: {}",
+                    event.getTicketId(), e.getMessage(), e);
+            acknowledgment.acknowledge();
+        }
+    }
+
+    /**
+     * Handle ticket status changed events - notify users when status changes
+     */
+    @KafkaListener(topics = "ticket.status.changed", groupId = "notifications-service-group",
+                   containerFactory = "ticketStatusChangedKafkaListenerContainerFactory")
+    public void handleTicketStatusChanged(
+            @Payload TicketStatusChangedEvent event,
+            @Header(KafkaHeaders.RECEIVED_TOPIC) String topic,
+            Acknowledgment acknowledgment) {
+
+        log.info("🔔 RECEIVED STATUS CHANGE EVENT: topic={}, ticketId={}, user={}, {} -> {}, technician={}",
+                topic, event.getTicketId(), event.getUtilisateurId(), event.getOldStatus(), event.getNewStatus(), event.getTechnicienId());
+
+        try {
+            // Create notification for user when ticket status changes
+            notificationService.createTicketStatusChangedNotification(event);
+
+            acknowledgment.acknowledge();
+
+        } catch (Exception e) {
+            log.error("Error processing ticket status changed event for ticket {}: {}",
+                    event.getTicketId(), e.getMessage(), e);
+            acknowledgment.acknowledge();
+        }
     }
 }

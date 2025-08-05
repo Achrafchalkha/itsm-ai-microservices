@@ -5,16 +5,26 @@ import com.itsm.ticket.domain.model.StatutTicket;
 import com.itsm.ticket.domain.model.Ticket;
 import com.itsm.ticket.infrastructure.kafka.TicketEventPublisher;
 import com.itsm.ticket.infrastructure.kafka.event.TicketCreatedEvent;
+import com.itsm.ticket.infrastructure.kafka.event.TicketNoteAddedEvent;
+import com.itsm.ticket.infrastructure.kafka.event.TicketStatusChangedEvent;
+import com.itsm.ticket.infrastructure.kafka.event.TicketUpdatedEvent;
 import com.itsm.ticket.infrastructure.persistence.entity.TicketEntity;
 import com.itsm.ticket.infrastructure.persistence.repository.TicketRepository;
 import com.itsm.ticket.infrastructure.storage.FileStorageService;
+import com.itsm.ticket.infrastructure.client.UserServiceClient;
+import com.itsm.ticket.application.dto.TeamDashboardDto;
+import com.itsm.ticket.application.dto.TechnicianStatsDto;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.Arrays;
 
 /**
  * Application service for ticket operations
@@ -24,10 +34,12 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Slf4j
 public class TicketService {
-    
+
     private final TicketRepository ticketRepository;
     private final TicketEventPublisher eventPublisher;
     private final FileStorageService fileStorageService;
+    private final RestTemplate restTemplate;
+    private final UserServiceClient userServiceClient;
     
     /**
      * Create a new ticket
@@ -312,6 +324,9 @@ public class TicketService {
             throw new RuntimeException("Technician not assigned to this ticket");
         }
 
+        // Store old status for event
+        String oldStatus = entity.getStatut().name();
+
         // Update status to OUVERT (technician starts working)
         entity.setStatut(StatutTicket.OUVERT);
         entity.setDateModification(java.time.LocalDateTime.now());
@@ -327,6 +342,32 @@ public class TicketService {
         addCommentToTicket(entity, "Travail commencé sur le ticket");
 
         entity = ticketRepository.save(entity);
+
+        // Get technician information for notification
+        UserServiceClient.TechnicianBasicInfo technicianInfo = null;
+        try {
+            technicianInfo = userServiceClient.getTechnicianBasicInfo(technicianId);
+        } catch (Exception e) {
+            log.warn("Could not fetch technician info for notification: {}", e.getMessage());
+        }
+
+        // Publish status changed event for user notification
+        TicketStatusChangedEvent statusEvent = TicketStatusChangedEvent.builder()
+                .ticketId(ticketId)
+                .ticketTitre(entity.getTitre())
+                .utilisateurId(entity.getUtilisateurId())
+                .technicienId(technicianId)
+                .technicienNom(technicianInfo != null ? technicianInfo.getNom() : "Technicien")
+                .technicienPrenom(technicianInfo != null ? technicianInfo.getPrenom() : "")
+                .oldStatus(oldStatus)
+                .newStatus("OUVERT")
+                .changeReason("Technicien a commencé le travail")
+                .changedAt(java.time.LocalDateTime.now())
+                .build();
+
+        eventPublisher.publishTicketStatusChanged(statusEvent);
+        log.info("🔔 PUBLISHED STATUS CHANGE EVENT: ticket={}, user={}, oldStatus={}, newStatus={}, technician={}",
+                ticketId, entity.getUtilisateurId(), oldStatus, "OUVERT", technicianId);
 
         return convertToDomain(entity);
     }
@@ -351,6 +392,29 @@ public class TicketService {
         entity.setDateModification(java.time.LocalDateTime.now());
 
         ticketRepository.save(entity);
+
+        // Get technician information for notification
+        UserServiceClient.TechnicianBasicInfo technicianInfo = null;
+        try {
+            technicianInfo = userServiceClient.getTechnicianBasicInfo(technicianId);
+        } catch (Exception e) {
+            log.warn("Could not fetch technician info for notification: {}", e.getMessage());
+        }
+
+        // Publish note added event for user notification
+        TicketNoteAddedEvent noteEvent = TicketNoteAddedEvent.builder()
+                .ticketId(ticketId)
+                .ticketTitre(entity.getTitre())
+                .utilisateurId(entity.getUtilisateurId())
+                .technicienId(technicianId)
+                .technicienNom(technicianInfo != null ? technicianInfo.getNom() : "Technicien")
+                .technicienPrenom(technicianInfo != null ? technicianInfo.getPrenom() : "")
+                .note(note)
+                .addedAt(java.time.LocalDateTime.now())
+                .build();
+
+        eventPublisher.publishTicketNoteAdded(noteEvent);
+        log.info("Published note added event for ticket {} to notify user {}", ticketId, entity.getUtilisateurId());
     }
 
     /**
@@ -367,6 +431,9 @@ public class TicketService {
         if (!technicianId.equals(entity.getTechnicienId())) {
             throw new RuntimeException("Technician not assigned to this ticket");
         }
+
+        // Store old status for event
+        String oldStatus = entity.getStatut().name();
 
         // Replace comment with resolution solution (not append)
         replaceCommentInTicket(entity, "RÉSOLUTION: " + solution);
@@ -386,6 +453,31 @@ public class TicketService {
         }
 
         entity = ticketRepository.save(entity);
+
+        // Get technician information for notification
+        UserServiceClient.TechnicianBasicInfo technicianInfo = null;
+        try {
+            technicianInfo = userServiceClient.getTechnicianBasicInfo(technicianId);
+        } catch (Exception e) {
+            log.warn("Could not fetch technician info for notification: {}", e.getMessage());
+        }
+
+        // Publish status changed event for user notification
+        TicketStatusChangedEvent statusEvent = TicketStatusChangedEvent.builder()
+                .ticketId(ticketId)
+                .ticketTitre(entity.getTitre())
+                .utilisateurId(entity.getUtilisateurId())
+                .technicienId(technicianId)
+                .technicienNom(technicianInfo != null ? technicianInfo.getNom() : "Technicien")
+                .technicienPrenom(technicianInfo != null ? technicianInfo.getPrenom() : "")
+                .oldStatus(oldStatus)
+                .newStatus("RESOLU")
+                .changeReason("Ticket résolu par le technicien")
+                .changedAt(java.time.LocalDateTime.now())
+                .build();
+
+        eventPublisher.publishTicketStatusChanged(statusEvent);
+        log.info("Published status changed event for ticket {} to notify user {}", ticketId, entity.getUtilisateurId());
 
         return convertToDomain(entity);
     }
@@ -506,4 +598,260 @@ public class TicketService {
 
         log.info("Ticket {} deleted successfully", ticketId);
     }
+
+    /**
+     * Get tickets for manager's team with pagination and filtering (simple approach)
+     */
+    public Page<Ticket> getTicketsByManagerTeam(UUID managerId, Pageable pageable, String status, String priority) {
+        log.info("Getting tickets for manager {}'s team", managerId);
+
+        try {
+            // Get manager's team ID from user-service (simple approach)
+            UUID teamId = userServiceClient.getManagerTeamId(managerId);
+            if (teamId == null) {
+                log.warn("No team found for manager {}, falling back to all tickets (manager may not be properly configured)", managerId);
+                // Fallback: return all tickets if manager doesn't have a team
+                if (status != null && priority != null) {
+                    StatutTicket statutTicket = StatutTicket.valueOf(status.toUpperCase());
+                    PrioriteTicket prioriteTicket = PrioriteTicket.valueOf(priority.toUpperCase());
+                    return ticketRepository.findByStatutAndPrioriteAndActifTrue(
+                        statutTicket, prioriteTicket, pageable)
+                        .map(this::convertToDomain);
+                } else if (status != null) {
+                    StatutTicket statutTicket = StatutTicket.valueOf(status.toUpperCase());
+                    return ticketRepository.findByStatutAndActifTrue(statutTicket, pageable)
+                        .map(this::convertToDomain);
+                } else if (priority != null) {
+                    PrioriteTicket prioriteTicket = PrioriteTicket.valueOf(priority.toUpperCase());
+                    return ticketRepository.findByPrioriteAndActifTrue(prioriteTicket, pageable)
+                        .map(this::convertToDomain);
+                } else {
+                    return ticketRepository.findByActifTrue(pageable)
+                        .map(this::convertToDomain);
+                }
+            }
+
+            log.info("Manager {} belongs to team {}, filtering tickets", managerId, teamId);
+
+            // Filter tickets by team_id with status and priority filters
+            if (status != null && priority != null) {
+                StatutTicket statutTicket = StatutTicket.valueOf(status.toUpperCase());
+                PrioriteTicket prioriteTicket = PrioriteTicket.valueOf(priority.toUpperCase());
+                return ticketRepository.findByTeamIdAndStatutAndPrioriteAndActifTrue(
+                    teamId, statutTicket, prioriteTicket, pageable)
+                    .map(this::convertToDomain);
+            } else if (status != null) {
+                StatutTicket statutTicket = StatutTicket.valueOf(status.toUpperCase());
+                return ticketRepository.findByTeamIdAndStatutAndActifTrue(teamId, statutTicket, pageable)
+                    .map(this::convertToDomain);
+            } else if (priority != null) {
+                PrioriteTicket prioriteTicket = PrioriteTicket.valueOf(priority.toUpperCase());
+                return ticketRepository.findByTeamIdAndPrioriteAndActifTrue(teamId, prioriteTicket, pageable)
+                    .map(this::convertToDomain);
+            } else {
+                return ticketRepository.findByTeamIdAndActifTrue(teamId, pageable)
+                    .map(this::convertToDomain);
+            }
+
+        } catch (Exception e) {
+            log.error("Error getting tickets for manager {}'s team: {}", managerId, e.getMessage(), e);
+            return Page.empty(pageable);
+        }
+    }
+
+    /**
+     * Get tickets by manager team and status (simple approach)
+     */
+    public List<Ticket> getTicketsByManagerTeamAndStatus(UUID managerId, StatutTicket status) {
+        log.info("Getting tickets for manager {}'s team with status: {}", managerId, status);
+
+        try {
+            // Get manager's team ID from user-service (simple approach)
+            UUID teamId = userServiceClient.getManagerTeamId(managerId);
+            if (teamId == null) {
+                log.warn("No team found for manager {}, falling back to all tickets with status {}", managerId, status);
+                // Fallback: return all tickets with the specified status
+                return ticketRepository.findByStatutAndActifTrueOrderByDateCreationDesc(status)
+                        .stream()
+                        .map(this::convertToDomain)
+                        .toList();
+            }
+
+            log.info("Manager {} belongs to team {}, filtering tickets by status {}", managerId, teamId, status);
+
+            return ticketRepository.findByTeamIdAndStatutAndActifTrueOrderByDateCreationDesc(teamId, status)
+                    .stream()
+                    .map(this::convertToDomain)
+                    .toList();
+
+        } catch (Exception e) {
+            log.error("Error getting tickets for manager {}'s team with status {}: {}",
+                    managerId, status, e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+    /**
+     * Get ticket by ID for manager (ensures ticket belongs to manager's team)
+     */
+    public Ticket getTicketByIdForManager(UUID ticketId, UUID managerId) {
+        log.info("Getting ticket {} for manager {}", ticketId, managerId);
+
+        // Get the ticket
+        TicketEntity ticketEntity = ticketRepository.findById(ticketId)
+                .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
+
+        // For now, skip team validation (simplified approach)
+        // TODO: Add team validation later
+
+        return convertToDomain(ticketEntity);
+    }
+
+    /**
+     * Get team dashboard statistics for manager
+     */
+    public TeamDashboardDto getTeamDashboard(UUID managerId) {
+        log.info("Getting team dashboard for manager {}", managerId);
+
+        try {
+            // Get manager's team ID from user-service (simple approach)
+            UUID teamId = userServiceClient.getManagerTeamId(managerId);
+            if (teamId == null) {
+                log.warn("No team found for manager {}, falling back to all tickets for dashboard", managerId);
+                // Fallback: calculate statistics for all tickets
+                long totalTickets = ticketRepository.countByActifTrue();
+                long openTickets = ticketRepository.countByStatutAndActifTrue(StatutTicket.OUVERT);
+                long inProgressTickets = ticketRepository.countByStatutAndActifTrue(StatutTicket.EN_COURS);
+                long resolvedTickets = ticketRepository.countByStatutAndActifTrue(StatutTicket.RESOLU);
+                long closedTickets = ticketRepository.countByStatutAndActifTrue(StatutTicket.FERME);
+                double averageResolutionTime = 0.0;
+                List<TechnicianStatsDto> technicianStats = List.of();
+                return new TeamDashboardDto(totalTickets, openTickets, inProgressTickets, resolvedTickets,
+                        closedTickets, averageResolutionTime, technicianStats);
+            }
+
+            log.info("Manager {} belongs to team {}, calculating team statistics", managerId, teamId);
+
+            // Calculate statistics for the team only
+            long totalTickets = ticketRepository.countByTeamIdAndActifTrue(teamId);
+            long openTickets = ticketRepository.countByTeamIdAndStatutAndActifTrue(teamId, StatutTicket.OUVERT);
+            long inProgressTickets = ticketRepository.countByTeamIdAndStatutAndActifTrue(teamId, StatutTicket.EN_COURS);
+            long resolvedTickets = ticketRepository.countByTeamIdAndStatutAndActifTrue(teamId, StatutTicket.RESOLU);
+            long closedTickets = ticketRepository.countByTeamIdAndStatutAndActifTrue(teamId, StatutTicket.FERME);
+
+            // Calculate average resolution time (simplified)
+            double averageResolutionTime = 0.0; // TODO: Implement actual calculation
+
+            // Get technician statistics (simplified - empty for now)
+            List<TechnicianStatsDto> technicianStats = List.of();
+
+            return new TeamDashboardDto(
+                    totalTickets, openTickets, inProgressTickets, resolvedTickets,
+                    closedTickets, averageResolutionTime, technicianStats);
+
+        } catch (Exception e) {
+            log.error("Error getting team dashboard for manager {}: {}", managerId, e.getMessage(), e);
+            return new TeamDashboardDto(0, 0, 0, 0, 0, 0.0, List.of());
+        }
+    }
+
+    /**
+     * Get tickets for manager's team (simple approach)
+     */
+    public List<Ticket> getTicketsByTeam(UUID managerId, String status, String priority) {
+        log.info("Getting tickets for manager's team. Manager: {}, Status: {}, Priority: {}", managerId, status, priority);
+
+        try {
+            // Get manager's team ID from user-service (simple approach)
+            UUID teamId = userServiceClient.getManagerTeamId(managerId);
+            if (teamId == null) {
+                log.warn("No team found for manager {}, falling back to all tickets", managerId);
+                // Fallback: return all tickets with filters
+                List<TicketEntity> ticketEntities = ticketRepository.findByActifTrueOrderByDateCreationDesc();
+
+                // Apply filters if provided
+                if (status != null) {
+                    StatutTicket statutTicket = StatutTicket.valueOf(status);
+                    ticketEntities = ticketEntities.stream()
+                        .filter(ticket -> ticket.getStatut() == statutTicket)
+                        .toList();
+                }
+
+                if (priority != null) {
+                    PrioriteTicket prioriteTicket = PrioriteTicket.valueOf(priority);
+                    ticketEntities = ticketEntities.stream()
+                        .filter(ticket -> ticket.getPriorite() == prioriteTicket)
+                        .toList();
+                }
+
+                return ticketEntities.stream()
+                        .map(this::convertToDomain)
+                        .toList();
+            }
+
+            log.info("Manager {} belongs to team {}, filtering tickets", managerId, teamId);
+
+            // Get tickets for the team with filters
+            List<TicketEntity> ticketEntities;
+            if (status != null && priority != null) {
+                StatutTicket statutTicket = StatutTicket.valueOf(status);
+                PrioriteTicket prioriteTicket = PrioriteTicket.valueOf(priority);
+                ticketEntities = ticketRepository.findByTeamIdAndActifTrueOrderByDateCreationDesc(teamId)
+                    .stream()
+                    .filter(ticket -> ticket.getStatut() == statutTicket && ticket.getPriorite() == prioriteTicket)
+                    .toList();
+            } else if (status != null) {
+                StatutTicket statutTicket = StatutTicket.valueOf(status);
+                ticketEntities = ticketRepository.findByTeamIdAndStatutAndActifTrueOrderByDateCreationDesc(teamId, statutTicket);
+            } else if (priority != null) {
+                PrioriteTicket prioriteTicket = PrioriteTicket.valueOf(priority);
+                ticketEntities = ticketRepository.findByTeamIdAndActifTrueOrderByDateCreationDesc(teamId)
+                    .stream()
+                    .filter(ticket -> ticket.getPriorite() == prioriteTicket)
+                    .toList();
+            } else {
+                ticketEntities = ticketRepository.findByTeamIdAndActifTrueOrderByDateCreationDesc(teamId);
+            }
+
+            log.info("Found {} tickets for manager {}'s team {}", ticketEntities.size(), managerId, teamId);
+
+            return ticketEntities.stream()
+                    .map(this::convertToDomain)
+                    .toList();
+
+        } catch (Exception e) {
+            log.error("Error getting tickets for manager's team: {}", e.getMessage(), e);
+            return List.of();
+        }
+    }
+
+
+
+    /**
+     * Simple DTO for technician data from user-service
+     */
+    public static class TechnicianDto {
+        private UUID id;
+        private String nom;
+        private String prenom;
+        private String email;
+
+        // Constructors
+        public TechnicianDto() {}
+
+        // Getters and setters
+        public UUID getId() { return id; }
+        public void setId(UUID id) { this.id = id; }
+
+        public String getNom() { return nom; }
+        public void setNom(String nom) { this.nom = nom; }
+
+        public String getPrenom() { return prenom; }
+        public void setPrenom(String prenom) { this.prenom = prenom; }
+
+        public String getEmail() { return email; }
+        public void setEmail(String email) { this.email = email; }
+    }
+
+
 }

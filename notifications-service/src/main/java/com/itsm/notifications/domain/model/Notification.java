@@ -60,14 +60,14 @@ public class Notification {
     /**
      * Factory method for ticket assignment notification
      */
-    public static Notification createTicketAssignmentNotification(UUID technicianId, 
+    public static Notification createTicketAssignmentNotification(UUID technicianId,
                                                                 UUID ticketId,
                                                                 String ticketTitle,
                                                                 String assignedBy,
                                                                 NotificationPriority priority) {
-        String title = String.format("Ticket #%s assigned to you", ticketId.toString().substring(0, 8));
-        String message = String.format("You have been assigned to ticket: %s by %s", ticketTitle, assignedBy);
-        
+        String title = "Nouveau ticket assigné";
+        String message = String.format("Un nouveau ticket \"%s\" vous a été assigné automatiquement. Vous pouvez maintenant commencer à travailler dessus.", ticketTitle);
+
         return Notification.builder()
                 .id(UUID.randomUUID())
                 .userId(technicianId)
@@ -76,6 +76,34 @@ public class Notification {
                 .message(message)
                 .priority(priority)
                 .channel(NotificationChannel.BOTH)
+                .readStatus(false)
+                .ticketId(ticketId)
+                .createdAt(LocalDateTime.now())
+                .build();
+    }
+
+    /**
+     * Factory method to create manager assignment notification (identical pattern to technician)
+     */
+    public static Notification createManagerAssignmentNotification(UUID managerId,
+                                                                 UUID ticketId,
+                                                                 String ticketTitle,
+                                                                 String technicianName,
+                                                                 String priority,
+                                                                 String category,
+                                                                 NotificationPriority notificationPriority) {
+        String title = "Technicien de votre équipe assigné à un ticket";
+        String message = String.format("Le technicien %s de votre équipe est assigné au ticket \"%s\"",
+                technicianName, ticketTitle);
+
+        return Notification.builder()
+                .id(UUID.randomUUID())
+                .userId(managerId)
+                .type(NotificationType.TICKET_ASSIGNED)
+                .title(title)
+                .message(message)
+                .priority(notificationPriority)
+                .channel(NotificationChannel.BOTH)  // Same as technician notification
                 .readStatus(false)
                 .ticketId(ticketId)
                 .createdAt(LocalDateTime.now())

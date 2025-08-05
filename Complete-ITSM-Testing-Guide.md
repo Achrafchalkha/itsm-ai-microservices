@@ -300,6 +300,12 @@ GET http://localhost:8082/api/public/assignment/teams/{team-id}
 - `GET /api/technician/dashboard` - Get dashboard summary
 - `GET /api/technician/debug/all-tickets` - Debug endpoint
 
+#### **Manager Endpoints**
+- `GET /api/manager/team/tickets` - Get all team tickets (with pagination & filters)
+- `GET /api/manager/team/tickets/status/{status}` - Get team tickets by status
+- `GET /api/manager/tickets/{id}` - Get ticket details (team tickets only)
+- `GET /api/manager/team/dashboard` - Get team dashboard statistics
+
 #### **Assignment Service Endpoints (Internal)**
 - `GET /api/public/assignment/tickets/{id}` - Get ticket for assignment
 - `PUT /api/public/assignment/tickets/{id}/assign` - Update assignment
