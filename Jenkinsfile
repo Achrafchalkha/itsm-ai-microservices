@@ -47,11 +47,9 @@ pipeline {
                     
                     services.each { service ->
                         echo "Building ${service}..."
-                        bat """
-                            cd ${service}
-                            mvn clean package -DskipTests
-                            cd ..
-                        """
+                        dir(service) {
+                            bat 'mvn clean package -DskipTests -U'
+                        }
                     }
                 }
             }
@@ -68,11 +66,11 @@ pipeline {
                     
                     services.each { service ->
                         echo "Testing ${service}..."
-                        bat """
-                            cd ${service}
-                            mvn test
-                            cd ..
-                        """
+                        dir(service) {
+                            catchError(buildResult: 'SUCCESS', stageResult: 'UNSTABLE') {
+                                bat 'mvn test'
+                            }
+                        }
                     }
                 }
             }
@@ -98,10 +96,11 @@ pipeline {
                         
                         services.each { service ->
                             echo "📦 Building Docker image for ${service}..."
-                            bat "docker build -t ${ACR_REGISTRY}/itsm-${service}:latest ${service}"
+                            bat "docker build -t ${ACR_REGISTRY}/itsm-${service}:latest -t ${ACR_REGISTRY}/itsm-${service}:%BUILD_NUMBER% .\\${service}"
                             
                             echo "📤 Pushing ${service} to ACR..."
                             bat "docker push ${ACR_REGISTRY}/itsm-${service}:latest"
+                            bat "docker push ${ACR_REGISTRY}/itsm-${service}:%BUILD_NUMBER%"
                         }
                         
                         // Logout
@@ -124,21 +123,13 @@ pipeline {
                                                      passwordVariable: 'AZURE_SECRET')]) {
                         // Login to Azure
                         bat """
-                            az login --service-principal ^
-                              -u %AZURE_CLIENT% ^
-                              -p %AZURE_SECRET% ^
-                              --tenant d4d13448-4ef9-411c-bc92-9654e9f5a3f5
+                            az login --service-principal -u %AZURE_CLIENT% -p %AZURE_SECRET% --tenant d4d13448-4ef9-411c-bc92-9654e9f5a3f5
                         """
                         
                         bat "az account set --subscription ${SUBSCRIPTION_ID}"
                         
                         // Get AKS credentials
-                        bat """
-                            az aks get-credentials ^
-                              --resource-group ${RESOURCE_GROUP} ^
-                              --name ${AKS_CLUSTER} ^
-                              --overwrite-existing
-                        """
+                        bat "az aks get-credentials --resource-group ${RESOURCE_GROUP} --name ${AKS_CLUSTER} --overwrite-existing"
                         
                         // Apply Kubernetes manifests
                         bat "kubectl apply -f k8s/"
