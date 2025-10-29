@@ -81,7 +81,7 @@ pipeline {
                         
                         services.each { service ->
                             echo "📦 Building Docker image for ${service}..."
-                            bat "docker build -t ${ACR_REGISTRY}/itsm-${service}:latest -t ${ACR_REGISTRY}/itsm-${service}:%BUILD_NUMBER% .\\${service}"
+                            bat "docker build -t ${ACR_REGISTRY}/itsm-${service}:latest -t ${ACR_REGISTRY}/itsm-${service}:%BUILD_NUMBER% -f ${service}\\Dockerfile ${service}"
                             
                             echo "📤 Pushing ${service} to ACR..."
                             bat "docker push ${ACR_REGISTRY}/itsm-${service}:latest"
