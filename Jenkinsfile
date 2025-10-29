@@ -77,9 +77,6 @@ pipeline {
         }
         
         stage('Docker - Build & Push') {
-            when {
-                branch 'main'
-            }
             steps {
                 script {
                     echo '🐳 Building and pushing Docker images to ACR...'
@@ -111,9 +108,6 @@ pipeline {
         }
         
         stage('Deploy to AKS') {
-            when {
-                branch 'main'
-            }
             steps {
                 script {
                     echo '☸️ Deploying to Azure Kubernetes Service...'

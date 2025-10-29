@@ -39,6 +39,11 @@ application-local.properties
 application-dev.properties
 application-prod.properties
 
+# Jenkins credentials (NEVER commit!)
+JENKINS_CREDENTIALS.txt
+*credentials*.txt
+*secrets*.txt
+
 # Docker volumes and data
 auth-service/kafka-data/
 auth-service/zookeeper-data/
