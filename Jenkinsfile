@@ -20,6 +20,19 @@ pipeline {
             steps {
                 echo '📥 Checking out code from GitHub...'
                 checkout scm
+                echo '✅ Code checked out successfully!'
+                bat 'dir'
+            }
+        }
+        
+        stage('Verify Environment') {
+            steps {
+                echo '🔍 Checking environment...'
+                bat 'java -version'
+                bat 'mvn -version'
+                bat 'docker --version'
+                bat 'az --version'
+                echo '✅ Environment verified!'
             }
         }
         
