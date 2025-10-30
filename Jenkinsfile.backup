@@ -1,0 +1,197 @@
+// ════════════════════════════════════════════════════════════════════════════════
+// ITSM DevSecOps Pipeline - STAGE 1: Build & Test with Maven + SonarQube
+// ════════════════════════════════════════════════════════════════════════════════
+//
+// PURPOSE: 
+//   • Checkout code from GitHub
+//   • Verify build environment (Java, Maven)
+//   • Compile all 7 microservices with Maven (skip tests for speed)
+//   • Run SonarQube code quality analysis
+//   • Generate quality metrics and reports
+//
+// Pipeline Stages:
+//   1. Checkout & Verify
+//   2. Build & Test (Maven clean package)
+//   3. SonarQube Analysis (Code Quality)
+//
+// Prerequisites:
+//   ✅ SonarQube running: http://localhost:9000
+//   ✅ SonarQube credential added: sonarqube-token
+//   ✅ Java 17+ installed
+//   ✅ Maven 3.9+ installed
+//
+// Deployment (Phase 2): Separate - Use Terraform/Docker/kubectl
+//
+// ════════════════════════════════════════════════════════════════════════════════
+
+pipeline {
+    agent any
+    
+    environment {
+        // SonarQube Configuration
+        SONARQUBE_HOST = 'http://localhost:9000'
+        SONARQUBE_PROJECT_KEY = 'com.itsm:microservices'
+        
+        // Services List
+        SERVICES = 'auth-service,user-service,ticket-service,assignment-service,notifications-service,analytics-service,eureka-server'
+    }
+    
+    options {
+        // Keep last 10 builds
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        // Timeout after 30 minutes
+        timeout(time: 30, unit: 'MINUTES')
+        // Show timestamps in logs
+        timestamps()
+    }
+    
+    stages {
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        // STAGE 1: CHECKOUT & VERIFY ENVIRONMENT
+        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+        stage('📥 Checkout & Verify') {
+            steps {
+                script {
+                    echo '''
+                    ╔════════════════════════════════════════════════════════════════════╗
+                    ║         📥 STAGE 1: CHECKOUT & VERIFY ENVIRONMENT                 ║
+                    ╚════════════════════════════════════════════════════════════════════╝
+                    '''
+                }
+                
+                // Checkout code from GitHub
+                checkout scm
+                echo '  ✅ Repository checked out'
+                bat 'git log --oneline -3'
+                echo ''
+                
+                // Verify build tools
+                script {
+                    echo '  📋 Verifying build environment...'
+                    echo ''
+                }
+                bat '''
+                    echo Java version:
+                    java -version
+                    echo.
+                    echo Maven version:
+                    mvn -version
+                    echo.
+                    echo Git version:
+                    git --version
+                '''
+                echo '  ✅ Environment verified successfully'
+            }
+        }
+        
+        stage('🔨 Build All Services') {
+            steps {
+                script {
+                    echo '''
+                    ╔════════════════════════════════════════════════════════════╗
+                    ║     🔨 STAGE 3: BUILD ALL 7 MICROSERVICES WITH MAVEN      ║
+                    ╚════════════════════════════════════════════════════════════╝
+                    '''
+                    
+                    def services = ['auth-service', 'user-service', 'ticket-service', 
+                                    'assignment-service', 'notifications-service', 
+                                    'analytics-service', 'eureka-server']
+                    
+                    services.each { service ->
+                        echo "🔨 Building ${service}..."
+                        dir(service) {
+                            bat 'mvn clean package -DskipTests -U'
+                        }
+                        echo "  ✅ ${service} built"
+                    }
+                }
+                echo '✅ All services built'
+            }
+        }
+        
+        stage('🛡 SonarQube Analysis') {
+            steps {
+                script {
+                    echo '''
+                    ╔════════════════════════════════════════════════════════════╗
+                    ║     🛡 STAGE 4: SONARQUBE CODE QUALITY ANALYSIS            ║
+                    ╚════════════════════════════════════════════════════════════╝
+                    '''
+                    
+                    def services = ['auth-service', 'user-service', 'ticket-service', 
+                                    'assignment-service', 'notifications-service', 
+                                    'analytics-service', 'eureka-server']
+                    
+                    withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                        services.each { service ->
+                            echo "  ▶ Analyzing ${service}..."
+                            dir(service) {
+                                bat '''
+                                    mvn sonar:sonar ^
+                                        -Dsonar.projectKey=com.itsm:%service% ^
+                                        -Dsonar.projectName=%service% ^
+                                        -Dsonar.host.url=http://localhost:9000 ^
+                                        -Dsonar.login=%SONAR_TOKEN%
+                                '''
+                            }
+                            echo "  ✅ ${service} analyzed"
+                        }
+                    }
+                }
+                echo '✅ SonarQube analysis complete'
+            }
+        }
+        
+        stage('✅ Complete') {
+            steps {
+                echo '''
+                ╔════════════════════════════════════════════════════════════════════╗
+                ║              ✅ PHASE 1: CODE QUALITY COMPLETE                    ║
+                ╚════════════════════════════════════════════════════════════════════╝
+                
+                 View Results:
+                   → SonarQube: http://localhost:9000
+                   → All 7 services: Built & analyzed
+                   → Artifacts in: service/target/
+                
+                🚀 PHASE 2: DEPLOYMENT (Separate Process)
+                ──────────────────────────────────────────
+                Execute these commands manually when ready:
+                
+                1. Login to ACR:
+                   az acr login --name acritsmac742
+                
+                2. Build & Push Docker Images:
+                   for each service:
+                     docker build -f SERVICE/Dockerfile -t acritsmac742.azurecr.io/itsm-SERVICE SERVICE
+                     docker push acritsmac742.azurecr.io/itsm-SERVICE
+                
+                3. Deploy to AKS:
+                   az aks get-credentials --resource-group rg-itsm-dev --name aks-itsm-dev
+                   kubectl apply -f k8s/ -n itsm
+                   
+                   OR use Terraform:
+                   cd terraform
+                   terraform apply -auto-approve
+                
+                ════════════════════════════════════════════════════════════════════
+                '''
+            }
+        }
+    }
+    
+    post {
+        always {
+            echo '✅ Pipeline completed'
+        }
+        failure {
+            echo '''
+            ❌ FAILURE - Troubleshoot:
+            1. Maven build failed? Check service pom.xml files
+            2. SonarQube not running? Start: docker run -d -p 9000:9000 sonarqube:latest
+            3. Token invalid? Verify sonarqube-token credential in Jenkins
+            '''
+        }
+    }
+}
+
