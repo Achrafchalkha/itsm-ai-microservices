@@ -1,198 +1,387 @@
-// ════════════════════════════════════════════════════════════════════════════════
-// ITSM DevSecOps Pipeline - STAGE 1: Build & Test with Maven + SonarQube
-// ════════════════════════════════════════════════════════════════════════════════
-//
-// PURPOSE: 
-//   • Checkout code from GitHub
-//   • Verify build environment (Java 17, Maven 3.9)
-//   • Compile all 7 microservices with Maven
-//   • Run SonarQube code quality analysis
-//   • Generate quality metrics and reports
-//
-// Pipeline Stages:
-//   1️⃣ Checkout & Verify Environment
-//   2️⃣ Build & Test (Maven clean package)
-//   3️⃣ SonarQube Analysis (Code Quality)
-//   4️⃣ Results & Summary
-//
-// Prerequisites:
-//   ✅ SonarQube running: docker run -d -p 9000:9000 sonarqube:latest
-//   ✅ SonarQube credential added to Jenkins: sonarqube-token
-//   ✅ Java 17+ installed on Jenkins agent
-//   ✅ Maven 3.9+ installed on Jenkins agent
-//   ✅ Git repository configured in Jenkins
-//
-// Deployment (Phase 2): Separate from Pipeline
-//   • Use Terraform to deploy to Azure
-//   • Use Docker to build images
-//   • Use kubectl to deploy to AKS
-//
-// ════════════════════════════════════════════════════════════════════════════════
+pipeline {// ════════════════════════════════════════════════════════════════════════════════
 
-pipeline {
-    agent any
-    
-    environment {
-        // SonarQube Configuration
-        SONARQUBE_HOST = 'http://localhost:9000'
-        SONARQUBE_PROJECT_KEY = 'com.itsm:microservices'
-        
-        // Services List
-        SERVICES = 'auth-service,user-service,ticket-service,assignment-service,notifications-service,analytics-service,eureka-server'
-    }
-    
-    options {
-        // Keep last 10 builds
-        buildDiscarder(logRotator(numToKeepStr: '10'))
-        // Timeout after 30 minutes
-        timeout(time: 30, unit: 'MINUTES')
-        // Show timestamps in logs
-        timestamps()
-        // Don't run concurrent builds
-        disableConcurrentBuilds()
-    }
-    
-    stages {
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // STAGE 1: CHECKOUT & VERIFY ENVIRONMENT
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        stage('STAGE 1: Checkout & Verify') {
-            steps {
-                script {
-                    echo '''
-                    ================================================
-                    STAGE 1: CHECKOUT & VERIFY ENVIRONMENT
-                    ================================================
-                    '''
-                }
-                
-                // Checkout code from GitHub
-                checkout scm
-                echo '[OK] Repository checked out from GitHub'
-                bat 'git log --oneline -5'
-                echo ''
-                
-                // Verify build tools
-                script {
-                    echo '[INFO] Verifying build environment...'
-                    echo ''
-                }
-                bat """
-                    echo ================================================
-                    echo Java Version:
-                    echo ================================================
-                    java -version
-                    echo.
-                    echo ================================================
-                    echo Maven Version:
-                    echo ================================================
-                    mvn -version
-                    echo.
-                    echo ================================================
-                    echo Git Version:
-                    echo ================================================
-                    git --version
+    agent any// ITSM DevSecOps Pipeline - STAGE 1: Build & Test with Maven + SonarQube
+
+    // ════════════════════════════════════════════════════════════════════════════════
+
+    environment {//
+
+        SONARQUBE_HOST = 'http://localhost:9000'// PURPOSE: 
+
+    }//   • Checkout code from GitHub
+
+    //   • Verify build environment (Java 17, Maven 3.9)
+
+    options {//   • Compile all 7 microservices with Maven
+
+        buildDiscarder(logRotator(numToKeepStr: '10'))//   • Run SonarQube code quality analysis
+
+        timeout(time: 30, unit: 'MINUTES')//   • Generate quality metrics and reports
+
+        timestamps()//
+
+        disableConcurrentBuilds()// Pipeline Stages:
+
+    }//   1️⃣ Checkout & Verify Environment
+
+    //   2️⃣ Build & Test (Maven clean package)
+
+    stages {//   3️⃣ SonarQube Analysis (Code Quality)
+
+        stage('STAGE 1: Checkout & Verify') {//   4️⃣ Results & Summary
+
+            steps {//
+
+                echo '[START] STAGE 1: CHECKOUT & VERIFY ENVIRONMENT'// Prerequisites:
+
+                checkout scm//   ✅ SonarQube running: docker run -d -p 9000:9000 sonarqube:latest
+
+                echo '[OK] Repository checked out from GitHub'//   ✅ SonarQube credential added to Jenkins: sonarqube-token
+
+                bat 'git log --oneline -5'//   ✅ Java 17+ installed on Jenkins agent
+
+                //   ✅ Maven 3.9+ installed on Jenkins agent
+
+                echo '[INFO] Verifying build environment...'//   ✅ Git repository configured in Jenkins
+
+                bat """//
+
+                    echo Java Version:// Deployment (Phase 2): Separate from Pipeline
+
+                    java -version//   • Use Terraform to deploy to Azure
+
+                    echo Maven Version://   • Use Docker to build images
+
+                    mvn -version//   • Use kubectl to deploy to AKS
+
+                    echo Git Version://
+
+                    git --version// ════════════════════════════════════════════════════════════════════════════════
+
                 """
-                echo '[OK] Environment verified successfully'
-            }
-        }
-        
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // STAGE 2: BUILD & TEST WITH MAVEN
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        stage('STAGE 2: Build & Test (Maven)') {
+
+                echo '[OK] Environment verified successfully'pipeline {
+
+            }    agent any
+
+        }    
+
+            environment {
+
+        stage('STAGE 2: Build & Test (Maven)') {        // SonarQube Configuration
+
+            steps {        SONARQUBE_HOST = 'http://localhost:9000'
+
+                echo '[START] STAGE 2: BUILD & TEST ALL 7 SERVICES WITH MAVEN'        SONARQUBE_PROJECT_KEY = 'com.itsm:microservices'
+
+                script {        
+
+                    def services = [        // Services List
+
+                        'auth-service',        SERVICES = 'auth-service,user-service,ticket-service,assignment-service,notifications-service,analytics-service,eureka-server'
+
+                        'user-service',    }
+
+                        'ticket-service',    
+
+                        'assignment-service',    options {
+
+                        'notifications-service',        // Keep last 10 builds
+
+                        'analytics-service',        buildDiscarder(logRotator(numToKeepStr: '10'))
+
+                        'eureka-server'        // Timeout after 30 minutes
+
+                    ]        timeout(time: 30, unit: 'MINUTES')
+
+                            // Show timestamps in logs
+
+                    def buildSuccess = 0        timestamps()
+
+                    def buildFailed = 0        // Don't run concurrent builds
+
+                            disableConcurrentBuilds()
+
+                    services.each { service ->    }
+
+                        echo ""    
+
+                        echo "[BUILD] Building ${service}..."    stages {
+
+                                // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                        try {        // STAGE 1: CHECKOUT & VERIFY ENVIRONMENT
+
+                            dir(service) {        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                                bat """        stage('STAGE 1: Checkout & Verify') {
+
+                                    mvn clean package -DskipTests -U ^            steps {
+
+                                        -Dmaven.javadoc.skip=true ^                script {
+
+                                        -Dmaven.source.skip=true ^                    echo '''
+
+                                        -Dmaven.test.skip=true                    ================================================
+
+                                """                    STAGE 1: CHECKOUT & VERIFY ENVIRONMENT
+
+                            }                    ================================================
+
+                                                '''
+
+                            def jarPath = "${service}/target/${service}-0.0.1-SNAPSHOT.jar"                }
+
+                            if (fileExists(jarPath)) {                
+
+                                echo "[OK] ${service} built successfully"                // Checkout code from GitHub
+
+                                buildSuccess++                checkout scm
+
+                            } else {                echo '[OK] Repository checked out from GitHub'
+
+                                echo "[WARN] JAR not found: ${jarPath}"                bat 'git log --oneline -5'
+
+                                buildFailed++                echo ''
+
+                            }                
+
+                        } catch (Exception e) {                // Verify build tools
+
+                            echo "[FAIL] ${service} build failed: ${e.message}"                script {
+
+                            buildFailed++                    echo '[INFO] Verifying build environment...'
+
+                        }                    echo ''
+
+                    }                }
+
+                                    bat """
+
+                    echo ""                    echo ================================================
+
+                    echo "[SUMMARY] Build Results: ${buildSuccess}/7 success, ${buildFailed}/7 failed"                    echo Java Version:
+
+                                        echo ================================================
+
+                    if (buildFailed > 0) {                    java -version
+
+                        error("Build failed for ${buildFailed} service(s)")                    echo.
+
+                    } else {                    echo ================================================
+
+                        echo "[OK] ALL 7 SERVICES BUILT SUCCESSFULLY!"                    echo Maven Version:
+
+                    }                    echo ================================================
+
+                }                    mvn -version
+
+            }                    echo.
+
+        }                    echo ================================================
+
+                            echo Git Version:
+
+        stage('STAGE 3: SonarQube Analysis') {                    echo ================================================
+
+            steps {                    git --version
+
+                echo '[START] STAGE 3: SONARQUBE CODE QUALITY ANALYSIS'                """
+
+                script {                echo '[OK] Environment verified successfully'
+
+                    def services = [            }
+
+                        'auth-service',        }
+
+                        'user-service',        
+
+                        'ticket-service',        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                        'assignment-service',        // STAGE 2: BUILD & TEST WITH MAVEN
+
+                        'notifications-service',        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                        'analytics-service',        stage('STAGE 2: Build & Test (Maven)') {
+
+                        'eureka-server'            steps {
+
+                    ]                script {
+
+                                        echo '''
+
+                    def analysisSuccess = 0                    ================================================
+
+                    def analysisFailed = 0                    STAGE 2: BUILD & TEST ALL 7 SERVICES WITH MAVEN
+
+                                        ================================================
+
+                    withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {                    
+
+                        services.each { service ->                    Command: mvn clean package -DskipTests -U
+
+                            echo ""                    Tasks:
+
+                            echo "[ANALYZE] Analyzing ${service}..."                      - Download dependencies
+
+                                                  - Compile Java source code
+
+                            try {                      - Run unit tests (if enabled)
+
+                                dir(service) {                      - Package JAR artifacts
+
+                                    def testCmd = fileExists('src/test/java') ?                       - Verify build integrity
+
+                                        '-Dsonar.tests=src/test/java' :                     
+
+                                        ''                    Expected Time: 2-3 minutes for all 7 services
+
+                                                        Parallelization: Sequential (one service at a time)
+
+                                    bat """                    '''
+
+                                        mvn sonar:sonar ^                    '''
+
+                                            -Dsonar.projectKey=com.itsm:%service% ^                    
+
+                                            -Dsonar.projectName=%service% ^                    def services = [
+
+                                            -Dsonar.sources=src/main/java ^                        'auth-service',
+
+                                            ${testCmd} ^                        'user-service',
+
+                                            -Dsonar.host.url=http://localhost:9000 ^                        'ticket-service',
+
+                                            -Dsonar.token=%SONAR_TOKEN% ^                        'assignment-service',
+
+                                            -Dsonar.java.source=17 ^                        'notifications-service',
+
+                                            -Dsonar.java.binaries=target/classes ^                        'analytics-service',
+
+                                            -Dsonar.exclusions=**/*Test.java,**/config/**,**/*Configuration.java,**/dto/**                        'eureka-server'
+
+                                    """                    ]
+
+                                                        
+
+                                    echo "[OK] ${service} analysis sent to SonarQube"                    def buildSuccess = 0
+
+                                    analysisSuccess++                    def buildFailed = 0
+
+                                }                    
+
+                            } catch (Exception e) {                    // Build each service sequentially
+
+                                echo "[SKIP] ${service} analysis skipped - ${e.message}"                    services.each { service ->
+
+                                analysisFailed++                        echo ""
+
+                            }                        echo "  ============================================"
+
+                        }                        echo "  Building ${service}..."
+
+                    }                        echo "  ============================================"
+
+                                            
+
+                    echo ""                        try {
+
+                    echo "[SUMMARY] Analysis Results: ${analysisSuccess}/7 success, ${analysisFailed}/7 skipped"                            dir(service) {
+
+                }                                bat """
+
+            }                                    mvn clean package -DskipTests -U ^
+
+        }                                        -Dmaven.javadoc.skip=true ^
+
+                                                -Dmaven.source.skip=true ^
+
+        stage('STAGE 4: Results & Summary') {                                        -Dmaven.test.skip=true
+
+            steps {                                """
+
+                echo '[START] STAGE 4: RESULTS AND SUMMARY'                            }
+
+                echo ""                            
+
+                echo "[OK] STAGE 1: BUILD AND TEST COMPLETE - SUCCESS"                            // Verify JAR was created
+
+                echo ""                            def jarPath = "${service}/target/${service}-0.0.1-SNAPSHOT.jar"
+
+                echo "PIPELINE EXECUTED SUCCESSFULLY"                            if (fileExists(jarPath)) {
+
+                echo ""                                echo "     [OK] ${service} built and JAR created"
+
+                echo "[OK] Stage 1: Checkout & Verify"                                buildSuccess++
+
+                echo "[OK] Stage 2: Build & Test (Maven)"                            } else {
+
+                echo "[OK] Stage 3: SonarQube Analysis"                                echo "     [WARN] JAR file not found at ${jarPath}"
+
+                echo ""                                buildFailed++
+
+                echo "BUILD ARTIFACTS CREATED:"                            }
+
+                echo "  - auth-service-0.0.1-SNAPSHOT.jar"                        } catch (Exception e) {
+
+                echo "  - user-service-0.0.1-SNAPSHOT.jar"                            echo "     [FAIL] ${service} build failed with error: ${e.message}"
+
+                echo "  - ticket-service-0.0.1-SNAPSHOT.jar"                            buildFailed++
+
+                echo "  - assignment-service-0.0.1-SNAPSHOT.jar"                        }
+
+                echo "  - notifications-service-0.0.1-SNAPSHOT.jar"                    }
+
+                echo "  - analytics-service-0.0.1-SNAPSHOT.jar"                    
+
+                echo "  - eureka-server-0.0.1-SNAPSHOT.jar"                    echo ""
+
+                echo ""                    echo "================================================"
+
+                echo "VIEW CODE QUALITY RESULTS:"                    echo "BUILD SUMMARY"
+
+                echo "  SonarQube Dashboard: http://localhost:9000/projects"                    echo "================================================"
+
+                echo ""                    echo "  [OK] Successful builds: ${buildSuccess}/7"
+
+            }                    echo "  [FAIL] Failed builds: ${buildFailed}/7"
+
+        }                    echo ""
+
+    }                    
+
+                        if (buildFailed > 0) {
+
+    post {                        error("Build failed for ${buildFailed} service(s)")
+
+        always {                    } else {
+
+            echo "[INFO] Pipeline execution completed"                        echo "  [OK] ALL 7 SERVICES BUILT SUCCESSFULLY!"
+
+        }                    }
+
+        success {                }
+
+            echo "[OK] Pipeline succeeded!"            }
+
+        }        }
+
+        failure {        
+
+            echo "[FAIL] Pipeline failed!"        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+        }        // STAGE 3: SONARQUBE CODE QUALITY ANALYSIS
+
+    }        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+}        stage('STAGE 3: SonarQube Analysis') {
+
             steps {
                 script {
                     echo '''
-                    ================================================
-                    STAGE 2: BUILD & TEST ALL 7 SERVICES WITH MAVEN
-                    ================================================
-                    
-                    Command: mvn clean package -DskipTests -U
-                    Tasks:
-                      - Download dependencies
-                      - Compile Java source code
-                      - Run unit tests (if enabled)
-                      - Package JAR artifacts
-                      - Verify build integrity
-                    
-                    Expected Time: 2-3 minutes for all 7 services
-                    Parallelization: Sequential (one service at a time)
-                    '''
-                    '''
-                    
-                    def services = [
-                        'auth-service',
-                        'user-service',
-                        'ticket-service',
-                        'assignment-service',
-                        'notifications-service',
-                        'analytics-service',
-                        'eureka-server'
-                    ]
-                    
-                    def buildSuccess = 0
-                    def buildFailed = 0
-                    
-                    // Build each service sequentially
-                    services.each { service ->
-                        echo ""
-                        echo "  ============================================"
-                        echo "  Building ${service}..."
-                        echo "  ============================================"
-                        
-                        try {
-                            dir(service) {
-                                bat """
-                                    mvn clean package -DskipTests -U ^
-                                        -Dmaven.javadoc.skip=true ^
-                                        -Dmaven.source.skip=true ^
-                                        -Dmaven.test.skip=true
-                                """
-                            }
-                            
-                            // Verify JAR was created
-                            def jarPath = "${service}/target/${service}-0.0.1-SNAPSHOT.jar"
-                            if (fileExists(jarPath)) {
-                                echo "     [OK] ${service} built and JAR created"
-                                buildSuccess++
-                            } else {
-                                echo "     [WARN] JAR file not found at ${jarPath}"
-                                buildFailed++
-                            }
-                        } catch (Exception e) {
-                            echo "     [FAIL] ${service} build failed with error: ${e.message}"
-                            buildFailed++
-                        }
-                    }
-                    
-                    echo ""
-                    echo "================================================"
-                    echo "BUILD SUMMARY"
-                    echo "================================================"
-                    echo "  [OK] Successful builds: ${buildSuccess}/7"
-                    echo "  [FAIL] Failed builds: ${buildFailed}/7"
-                    echo ""
-                    
-                    if (buildFailed > 0) {
-                        error("Build failed for ${buildFailed} service(s)")
-                    } else {
-                        echo "  [OK] ALL 7 SERVICES BUILT SUCCESSFULLY!"
-                    }
-                }
-            }
-        }
-        
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        // STAGE 3: SONARQUBE CODE QUALITY ANALYSIS
-        // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        stage('STAGE 3: SonarQube Analysis') {
-            steps {
-                script {
-                    echo '''
-                    ================================================
+                    =============================================
                     STAGE 3: SONARQUBE CODE QUALITY ANALYSIS
-                    ================================================
+                    =============================================
                     
                     Analyzing code for:
                       - BUGS: Logic errors and potential runtime exceptions
