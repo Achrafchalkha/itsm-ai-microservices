@@ -219,8 +219,8 @@ pipeline {
                     def analysisSuccess = 0
                     def analysisFailed = 0
                     
-                    // Use SonarQube credentials from Jenkins (Username/Password type)
-                    withCredentials([usernamePassword(credentialsId: 'sonarqube-token', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_PASS')]) {
+                    // SonarQube Analysis - Using String Token credential
+                    withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
                         services.each { service ->
                             echo ""
                             echo "  ┌─────────────────────────────────────────────────────────"
@@ -229,25 +229,29 @@ pipeline {
                             
                             try {
                                 dir(service) {
-                                    bat '''
+                                    // Check if test directory exists
+                                    def testCmd = fileExists('src/test/java') ? 
+                                        '-Dsonar.tests=src/test/java' : 
+                                        ''
+                                    
+                                    bat """
                                         mvn sonar:sonar ^
                                             -Dsonar.projectKey=com.itsm:%service% ^
                                             -Dsonar.projectName=%service% ^
                                             -Dsonar.sources=src/main/java ^
-                                            -Dsonar.tests=src/test/java ^
+                                            ${testCmd} ^
                                             -Dsonar.host.url=http://localhost:9000 ^
-                                            -Dsonar.login=%SONAR_USER% ^
-                                            -Dsonar.password=%SONAR_PASS% ^
+                                            -Dsonar.token=%SONAR_TOKEN% ^
                                             -Dsonar.java.source=17 ^
                                             -Dsonar.java.binaries=target/classes ^
                                             -Dsonar.exclusions=**/*Test.java,**/config/**,**/*Configuration.java,**/dto/**
-                                    '''
+                                    """
+                                    
+                                    echo "     ✅ SUCCESS: ${service} analysis sent to SonarQube"
+                                    analysisSuccess++
                                 }
-                                
-                                echo "     ✅ SUCCESS: ${service} analysis sent to SonarQube"
-                                analysisSuccess++
                             } catch (Exception e) {
-                                echo "     ❌ FAILED: ${service} analysis failed: ${e.message}"
+                                echo "     ⚠️ SKIPPED: ${service} SonarQube analysis skipped - ${e.message}"
                                 analysisFailed++
                             }
                         }
