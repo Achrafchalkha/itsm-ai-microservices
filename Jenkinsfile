@@ -77,22 +77,22 @@ pipeline {
                     echo '[INFO] Verifying build environment...'
                     echo ''
                 }
-                bat '''
-                    echo ════════════════════════════════════════════════════════════
+                bat """
+                    echo ================================================
                     echo Java Version:
-                    echo ════════════════════════════════════════════════════════════
+                    echo ================================================
                     java -version
                     echo.
-                    echo ════════════════════════════════════════════════════════════
+                    echo ================================================
                     echo Maven Version:
-                    echo ════════════════════════════════════════════════════════════
+                    echo ================================================
                     mvn -version
                     echo.
-                    echo ════════════════════════════════════════════════════════════
+                    echo ================================================
                     echo Git Version:
-                    echo ════════════════════════════════════════════════════════════
+                    echo ================================================
                     git --version
-                '''
+                """
                 echo '[OK] Environment verified successfully'
             }
         }
@@ -143,12 +143,12 @@ pipeline {
                         
                         try {
                             dir(service) {
-                                bat '''
+                                bat """
                                     mvn clean package -DskipTests -U ^
                                         -Dmaven.javadoc.skip=true ^
                                         -Dmaven.source.skip=true ^
                                         -Dmaven.test.skip=true
-                                '''
+                                """
                             }
                             
                             // Verify JAR was created
