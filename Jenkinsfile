@@ -56,25 +56,25 @@ pipeline {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // STAGE 1: CHECKOUT & VERIFY ENVIRONMENT
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        stage('📥 Checkout & Verify') {
+        stage('STAGE 1: Checkout & Verify') {
             steps {
                 script {
                     echo '''
-                    ╔════════════════════════════════════════════════════════════════════╗
-                    ║         📥 STAGE 1: CHECKOUT & VERIFY ENVIRONMENT                 ║
-                    ╚════════════════════════════════════════════════════════════════════╝
+                    ================================================
+                    STAGE 1: CHECKOUT & VERIFY ENVIRONMENT
+                    ================================================
                     '''
                 }
                 
                 // Checkout code from GitHub
                 checkout scm
-                echo '  ✅ Repository checked out from GitHub'
+                echo '[OK] Repository checked out from GitHub'
                 bat 'git log --oneline -5'
                 echo ''
                 
                 // Verify build tools
                 script {
-                    echo '  📋 Verifying build environment...'
+                    echo '[INFO] Verifying build environment...'
                     echo ''
                 }
                 bat '''
@@ -93,31 +93,32 @@ pipeline {
                     echo ════════════════════════════════════════════════════════════
                     git --version
                 '''
-                echo '  ✅ Environment verified successfully'
+                echo '[OK] Environment verified successfully'
             }
         }
         
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // STAGE 2: BUILD & TEST WITH MAVEN
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        stage('🔨 Build & Test (Maven)') {
+        stage('STAGE 2: Build & Test (Maven)') {
             steps {
                 script {
                     echo '''
-                    ╔════════════════════════════════════════════════════════════════════╗
-                    ║        🔨 STAGE 2: BUILD & TEST ALL 7 SERVICES WITH MAVEN         ║
-                    ║                                                                    ║
-                    ║  Command: mvn clean package -DskipTests -U                         ║
-                    ║  Tasks:                                                            ║
-                    ║    • Download dependencies                                         ║
-                    ║    • Compile Java source code                                      ║
-                    ║    • Run unit tests (if enabled)                                   ║
-                    ║    • Package JAR artifacts                                         ║
-                    ║    • Verify build integrity                                        ║
-                    ║                                                                    ║
-                    ║  Expected Time: 2-3 minutes for all 7 services                     ║
-                    ║  Parallelization: Sequential (one service at a time)               ║
-                    ╚════════════════════════════════════════════════════════════════════╝
+                    ================================================
+                    STAGE 2: BUILD & TEST ALL 7 SERVICES WITH MAVEN
+                    ================================================
+                    
+                    Command: mvn clean package -DskipTests -U
+                    Tasks:
+                      - Download dependencies
+                      - Compile Java source code
+                      - Run unit tests (if enabled)
+                      - Package JAR artifacts
+                      - Verify build integrity
+                    
+                    Expected Time: 2-3 minutes for all 7 services
+                    Parallelization: Sequential (one service at a time)
+                    '''
                     '''
                     
                     def services = [
@@ -137,7 +138,7 @@ pipeline {
                     services.each { service ->
                         echo ""
                         echo "  ┌─────────────────────────────────────────────────────────"
-                        echo "  │ 📦 Building ${service}..."
+                        echo "  │ Building ${service}..."
                         echo "  └─────────────────────────────────────────────────────────"
                         
                         try {
@@ -153,30 +154,30 @@ pipeline {
                             // Verify JAR was created
                             def jarPath = "${service}/target/${service}-0.0.1-SNAPSHOT.jar"
                             if (fileExists(jarPath)) {
-                                echo "     ✅ SUCCESS: ${service} built and JAR created"
+                                echo "     [OK] ${service} built and JAR created"
                                 buildSuccess++
                             } else {
-                                echo "     ⚠️ WARNING: JAR file not found at ${jarPath}"
+                                echo "     [WARN] JAR file not found at ${jarPath}"
                                 buildFailed++
                             }
                         } catch (Exception e) {
-                            echo "     ❌ FAILED: ${service} build failed with error: ${e.message}"
+                            echo "     [FAIL] ${service} build failed with error: ${e.message}"
                             buildFailed++
                         }
                     }
                     
                     echo ""
-                    echo "════════════════════════════════════════════════════════════════════"
-                    echo "📊 BUILD SUMMARY"
-                    echo "════════════════════════════════════════════════════════════════════"
-                    echo "  ✅ Successful builds: ${buildSuccess}/7"
-                    echo "  ❌ Failed builds: ${buildFailed}/7"
+                    echo "================================================"
+                    echo "BUILD SUMMARY"
+                    echo "================================================"
+                    echo "  [OK] Successful builds: ${buildSuccess}/7"
+                    echo "  [FAIL] Failed builds: ${buildFailed}/7"
                     echo ""
                     
                     if (buildFailed > 0) {
                         error("Build failed for ${buildFailed} service(s)")
                     } else {
-                        echo "  ✅ ALL 7 SERVICES BUILT SUCCESSFULLY!"
+                        echo "  [OK] ALL 7 SERVICES BUILT SUCCESSFULLY!"
                     }
                 }
             }
@@ -185,25 +186,25 @@ pipeline {
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
         // STAGE 3: SONARQUBE CODE QUALITY ANALYSIS
         // ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-        stage('🛡️ SonarQube Analysis') {
+        stage('STAGE 3: SonarQube Analysis') {
             steps {
                 script {
                     echo '''
-                    ╔════════════════════════════════════════════════════════════════════╗
-                    ║      🛡️ STAGE 3: SONARQUBE CODE QUALITY ANALYSIS                  ║
-                    ║                                                                    ║
-                    ║  Analyzing code for:                                               ║
-                    ║    🐛 Bugs - Logic errors and potential runtime exceptions        ║
-                    ║    🔓 Vulnerabilities - Security threats and weaknesses           ║
-                    ║    💨 Code Smells - Maintainability and readability issues        ║
-                    ║    📊 Coverage - Unit test coverage gaps                          ║
-                    ║    🔄 Duplications - Copy-paste code detection                    ║
-                    ║    🎯 Hotspots - Security-critical code sections                  ║
-                    ║                                                                    ║
-                    ║  Server: http://localhost:9000                                    ║
-                    ║  Projects: 7 microservices                                         ║
-                    ║  Expected Time: 1-2 minutes for all services                       ║
-                    ╚════════════════════════════════════════════════════════════════════╝
+                    ================================================
+                    STAGE 3: SONARQUBE CODE QUALITY ANALYSIS
+                    ================================================
+                    
+                    Analyzing code for:
+                      - BUGS: Logic errors and potential runtime exceptions
+                      - VULNERABILITIES: Security threats and weaknesses
+                      - CODE SMELLS: Maintainability and readability issues
+                      - COVERAGE: Unit test coverage gaps
+                      - DUPLICATIONS: Copy-paste code detection
+                      - HOTSPOTS: Security-critical code sections
+                    
+                    Server: http://localhost:9000
+                    Projects: 7 microservices
+                    Expected Time: 1-2 minutes for all services
                     '''
                     
                     def services = [
@@ -224,7 +225,7 @@ pipeline {
                         services.each { service ->
                             echo ""
                             echo "  ┌─────────────────────────────────────────────────────────"
-                            echo "  │ ▶️ Analyzing ${service}..."
+                            echo "  │ Analyzing ${service}..."
                             echo "  └─────────────────────────────────────────────────────────"
                             
                             try {
@@ -247,22 +248,22 @@ pipeline {
                                             -Dsonar.exclusions=**/*Test.java,**/config/**,**/*Configuration.java,**/dto/**
                                     """
                                     
-                                    echo "     ✅ SUCCESS: ${service} analysis sent to SonarQube"
+                                    echo "     [OK] ${service} analysis sent to SonarQube"
                                     analysisSuccess++
                                 }
                             } catch (Exception e) {
-                                echo "     ⚠️ SKIPPED: ${service} SonarQube analysis skipped - ${e.message}"
+                                echo "     [SKIP] ${service} SonarQube analysis skipped - ${e.message}"
                                 analysisFailed++
                             }
                         }
                     }
                     
                     echo ""
-                    echo "════════════════════════════════════════════════════════════════════"
-                    echo "📊 ANALYSIS SUMMARY"
-                    echo "════════════════════════════════════════════════════════════════════"
-                    echo "  ✅ Successful analyses: ${analysisSuccess}/7"
-                    echo "  ❌ Failed analyses: ${analysisFailed}/7"
+                    echo "================================================"
+                    echo "ANALYSIS SUMMARY"
+                    echo "================================================"
+                    echo "  [OK] Successful analyses: ${analysisSuccess}/7"
+                    echo "  [FAIL] Failed analyses: ${analysisFailed}/7"
                     echo ""
                 }
             }
@@ -276,71 +277,71 @@ pipeline {
                 script {
                     echo '''
                     ╔════════════════════════════════════════════════════════════════════╗
-                    ║         ✅ STAGE 1: BUILD & TEST COMPLETE - SUCCESS!              ║
+                    ║         OK: STAGE 1 BUILD & TEST COMPLETE - SUCCESS!              ║
                     ╚════════════════════════════════════════════════════════════════════╝
                     
-                    📋 PIPELINE EXECUTED SUCCESSFULLY:
+                    PIPELINE EXECUTED SUCCESSFULLY:
                     
-                    ✅ Stage 1: Checkout & Verify
-                       │ └─ Git repository synchronized
-                       │ └─ Java 17 verified
-                       │ └─ Maven 3.9 verified
-                       └─ Build environment ready
+                    [OK] Stage 1: Checkout & Verify
+                       - Git repository synchronized
+                       - Java 17 verified
+                       - Maven 3.9 verified
+                       - Build environment ready
                     
-                    ✅ Stage 2: Build & Test (Maven)
-                       ├─ auth-service .................. BUILT ✓
-                       ├─ user-service .................. BUILT ✓
-                       ├─ ticket-service ................ BUILT ✓
-                       ├─ assignment-service ............ BUILT ✓
-                       ├─ notifications-service ......... BUILT ✓
-                       ├─ analytics-service ............ BUILT ✓
-                       └─ eureka-server ................ BUILT ✓
+                    [OK] Stage 2: Build & Test (Maven)
+                       - auth-service .................. BUILT
+                       - user-service .................. BUILT
+                       - ticket-service ................ BUILT
+                       - assignment-service ............ BUILT
+                       - notifications-service ......... BUILT
+                       - analytics-service ............ BUILT
+                       - eureka-server ................ BUILT
                        
-                       📦 Artifacts: 7 JAR files created
-                       ⏱️ Build Time: ~2-3 minutes
+                       Artifacts: 7 JAR files created
+                       Build Time: ~2-3 minutes
                     
-                    ✅ Stage 3: SonarQube Analysis
-                       ├─ 7 projects analyzed
-                       ├─ Code quality metrics generated
-                       ├─ Security issues identified
-                       └─ Coverage gaps reported
+                    [OK] Stage 3: SonarQube Analysis
+                       - 7 projects analyzed
+                       - Code quality metrics generated
+                       - Security issues identified
+                       - Coverage gaps reported
                     
-                    ════════════════════════════════════════════════════════════════════
-                    📊 VIEW CODE QUALITY RESULTS:
-                    ════════════════════════════════════════════════════════════════════
+                    ================================================
+                    VIEW CODE QUALITY RESULTS:
+                    ================================================
                     
-                    🔗 SonarQube Dashboard:
+                    SonarQube Dashboard:
                        URL: http://localhost:9000/projects
                        
                        Each project shows metrics for:
-                         • 🎯 Reliability (# of Bugs found)
-                         • 🔓 Security (# of Vulnerabilities & Hotspots)
-                         • 💨 Maintainability (# of Code Smells)
-                         • 📊 Coverage (% of code covered by tests)
-                         • 🔄 Duplication (% of duplicated code)
+                         - Reliability: # of Bugs found
+                         - Security: # of Vulnerabilities & Hotspots
+                         - Maintainability: # of Code Smells
+                         - Coverage: % of code covered by tests
+                         - Duplication: % of duplicated code
                     
-                    📦 BUILD ARTIFACTS CREATED:
+                    BUILD ARTIFACTS CREATED:
                        Location: Each service/target/ directory
-                       ├─ auth-service-0.0.1-SNAPSHOT.jar
-                       ├─ user-service-0.0.1-SNAPSHOT.jar
-                       ├─ ticket-service-0.0.1-SNAPSHOT.jar
-                       ├─ assignment-service-0.0.1-SNAPSHOT.jar
-                       ├─ notifications-service-0.0.1-SNAPSHOT.jar
-                       ├─ analytics-service-0.0.1-SNAPSHOT.jar
-                       └─ eureka-server-0.0.1-SNAPSHOT.jar
+                       - auth-service-0.0.1-SNAPSHOT.jar
+                       - user-service-0.0.1-SNAPSHOT.jar
+                       - ticket-service-0.0.1-SNAPSHOT.jar
+                       - assignment-service-0.0.1-SNAPSHOT.jar
+                       - notifications-service-0.0.1-SNAPSHOT.jar
+                       - analytics-service-0.0.1-SNAPSHOT.jar
+                       - eureka-server-0.0.1-SNAPSHOT.jar
                     
-                    ════════════════════════════════════════════════════════════════════
-                    🚀 NEXT: PHASE 2 - DEPLOYMENT (Manual Execution)
-                    ════════════════════════════════════════════════════════════════════
+                    ================================================
+                    NEXT: PHASE 2 - DEPLOYMENT (Manual Execution)
+                    ================================================
                     
                     When ready to proceed to Phase 2, execute these steps manually:
                     
-                    1️⃣ BUILD DOCKER IMAGES:
+                    1) BUILD DOCKER IMAGES:
                        for each service:
                          docker build -f SERVICE/Dockerfile ^
                            -t acritsmac742.azurecr.io/itsm-SERVICE:latest SERVICE
                     
-                    2️⃣ PUSH TO AZURE CONTAINER REGISTRY (ACR):
+                    2) PUSH TO AZURE CONTAINER REGISTRY (ACR):
                        # Login to ACR
                        az acr login --name acritsmac742
                        
