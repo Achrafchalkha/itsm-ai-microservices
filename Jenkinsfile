@@ -219,8 +219,8 @@ pipeline {
                     def analysisSuccess = 0
                     def analysisFailed = 0
                     
-                    // Use SonarQube credentials from Jenkins
-                    withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
+                    // Use SonarQube credentials from Jenkins (Username/Password type)
+                    withCredentials([usernamePassword(credentialsId: 'sonarqube-token', usernameVariable: 'SONAR_USER', passwordVariable: 'SONAR_PASS')]) {
                         services.each { service ->
                             echo ""
                             echo "  ┌─────────────────────────────────────────────────────────"
@@ -236,7 +236,8 @@ pipeline {
                                             -Dsonar.sources=src/main/java ^
                                             -Dsonar.tests=src/test/java ^
                                             -Dsonar.host.url=http://localhost:9000 ^
-                                            -Dsonar.login=%SONAR_TOKEN% ^
+                                            -Dsonar.login=%SONAR_USER% ^
+                                            -Dsonar.password=%SONAR_PASS% ^
                                             -Dsonar.java.source=17 ^
                                             -Dsonar.java.binaries=target/classes ^
                                             -Dsonar.exclusions=**/*Test.java,**/config/**,**/*Configuration.java,**/dto/**
