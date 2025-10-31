@@ -137,9 +137,9 @@ pipeline {
                     // Build each service sequentially
                     services.each { service ->
                         echo ""
-                        echo "  ┌─────────────────────────────────────────────────────────"
-                        echo "  │ Building ${service}..."
-                        echo "  └─────────────────────────────────────────────────────────"
+                        echo "  ============================================"
+                        echo "  Building ${service}..."
+                        echo "  ============================================"
                         
                         try {
                             dir(service) {
@@ -224,9 +224,9 @@ pipeline {
                     withCredentials([string(credentialsId: 'sonarqube-token', variable: 'SONAR_TOKEN')]) {
                         services.each { service ->
                             echo ""
-                            echo "  ┌─────────────────────────────────────────────────────────"
-                            echo "  │ Analyzing ${service}..."
-                            echo "  └─────────────────────────────────────────────────────────"
+                            echo "  ============================================"
+                            echo "  Analyzing ${service}..."
+                            echo "  ============================================"
                             
                             try {
                                 dir(service) {
