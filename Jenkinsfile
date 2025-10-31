@@ -44,7 +44,7 @@ pipeline {
                 script {
                     def svcs = ['auth-service', 'user-service', 'ticket-service', 'assignment-service', 'notifications-service', 'analytics-service', 'eureka-server']
                     svcs.each { s ->
-                        bat "C:\\Users\\LENOVO\\Downloads\\trivy_0.67.0_windows-64bit\\trivy.exe image --severity HIGH,CRITICAL --exit-code 0 acritsmac742.azurecr.io/itsm-${s}:latest"
+                        bat "C:\\Users\\LENOVO\\Downloads\\trivy_0.67.0_windows-64bit\\trivy.exe image --scanners vuln --severity HIGH,CRITICAL --exit-code 0 --skip-java-db-update acritsmac742.azurecr.io/itsm-${s}:latest"
                     }
                 }
             }
