@@ -1,3 +1,27 @@
+variable "subscription_id" {
+  description = "Azure Subscription ID"
+  type        = string
+  default     = "339e2872-26be-4ffb-b15e-e85a3e5e4aed"
+}
+
+variable "tenant_id" {
+  description = "Azure Tenant ID"
+  type        = string
+  default     = "d4d13448-4ef9-411c-bc92-9654e9f5a3f5"
+}
+
+variable "client_id" {
+  description = "Azure Service Principal Client ID"
+  type        = string
+  sensitive   = true
+}
+
+variable "client_secret" {
+  description = "Azure Service Principal Client Secret"
+  type        = string
+  sensitive   = true
+}
+
 variable "resource_group_name" {
   description = "Name of the resource group"
   type        = string

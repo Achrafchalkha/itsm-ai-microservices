@@ -65,10 +65,15 @@ pipeline {
         stage('Terraform Infrastructure Provisioning') {
             steps {
                 script {
-                    dir('terraform') {
-                        bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe init'
-                        bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe plan -out=tfplan'
-                        bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe apply -auto-approve tfplan'
+                    withCredentials([
+                        string(credentialsId: 'azure-client-id', variable: 'ARM_CLIENT_ID'),
+                        string(credentialsId: 'azure-client-secret', variable: 'ARM_CLIENT_SECRET')
+                    ]) {
+                        dir('terraform') {
+                            bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe init'
+                            bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe plan -var="client_id=%ARM_CLIENT_ID%" -var="client_secret=%ARM_CLIENT_SECRET%" -out=tfplan'
+                            bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe apply -auto-approve tfplan'
+                        }
                     }
                 }
             }
