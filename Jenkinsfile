@@ -81,7 +81,13 @@ pipeline {
         stage('Deploy to AKS') {
             steps {
                 script {
-                    withCredentials([usernamePassword(credentialsId: 'acr-credentials', usernameVariable: 'ACR_USER', passwordVariable: 'ACR_PASS')]) {
+                    withCredentials([
+                        usernamePassword(credentialsId: 'acr-credentials', usernameVariable: 'ACR_USER', passwordVariable: 'ACR_PASS'),
+                        string(credentialsId: 'azure-client-id', variable: 'CLIENT_ID'),
+                        string(credentialsId: 'azure-client-secret', variable: 'CLIENT_SECRET')
+                    ]) {
+                        bat '"C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" login --service-principal -u %CLIENT_ID% -p %CLIENT_SECRET% --tenant d4d13448-4ef9-411c-bc92-9654e9f5a3f5'
+                        bat '"C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" account set --subscription 339e2872-26be-4ffb-b15e-e85a3e5e4aed'
                         bat '"C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" aks get-credentials --resource-group rg-itsm-dev --name aks-itsm-dev --overwrite-existing'
                         bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" create secret docker-registry acr-secret --docker-server=acritsmac742.azurecr.io --docker-username=%ACR_USER% --docker-password=%ACR_PASS% --namespace=itsm --dry-run=client -o yaml | "C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" apply -f -'
                         bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" apply -f k8s/namespace.yaml'
