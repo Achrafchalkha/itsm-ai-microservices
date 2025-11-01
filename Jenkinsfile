@@ -71,7 +71,7 @@ pipeline {
                     ]) {
                         dir('terraform') {
                             bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe init'
-                            bat 'echo client_id = "%CLIENT_ID%" > terraform.tfvars && echo client_secret = "%CLIENT_SECRET%" >> terraform.tfvars && C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe plan -out=tfplan && del terraform.tfvars'
+                            bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe plan -var="client_id=%CLIENT_ID%" -var="client_secret=%CLIENT_SECRET%" -out=tfplan'
                             bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe apply -auto-approve tfplan'
                         }
                     }
