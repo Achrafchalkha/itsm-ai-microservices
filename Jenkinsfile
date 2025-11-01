@@ -72,7 +72,7 @@ pipeline {
                         dir('terraform') {
                             bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe init'
                             bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe plan -var="client_id=%CLIENT_ID%" -var="client_secret=%CLIENT_SECRET%" -out=tfplan'
-                            bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe apply -auto-approve tfplan'
+                            echo 'Terraform plan completed - skipping apply since infrastructure already exists'
                         }
                     }
                 }
