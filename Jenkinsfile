@@ -77,15 +77,15 @@ pipeline {
             steps {
                 script {
                     withCredentials([usernamePassword(credentialsId: 'acr-credentials', usernameVariable: 'ACR_USER', passwordVariable: 'ACR_PASS')]) {
-                        bat 'az aks get-credentials --resource-group rg-itsm-dev --name aks-itsm-dev --overwrite-existing'
-                        bat 'kubectl create secret docker-registry acr-secret --docker-server=acritsmac742.azurecr.io --docker-username=%ACR_USER% --docker-password=%ACR_PASS% --namespace=itsm --dry-run=client -o yaml | kubectl apply -f -'
-                        bat 'kubectl apply -f k8s/namespace.yaml'
-                        bat 'kubectl apply -f k8s/configmap.yaml'
-                        bat 'kubectl apply -f k8s/secret.yaml'
-                        bat 'kubectl apply -f k8s/deployments.yaml'
-                        bat 'kubectl apply -f k8s/services.yaml'
-                        bat 'kubectl get pods -n itsm'
-                        bat 'kubectl get svc -n itsm'
+                        bat '"C:\\Program Files (x86)\\Microsoft SDKs\\Azure\\CLI2\\wbin\\az.cmd" aks get-credentials --resource-group rg-itsm-dev --name aks-itsm-dev --overwrite-existing'
+                        bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" create secret docker-registry acr-secret --docker-server=acritsmac742.azurecr.io --docker-username=%ACR_USER% --docker-password=%ACR_PASS% --namespace=itsm --dry-run=client -o yaml | "C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" apply -f -'
+                        bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" apply -f k8s/namespace.yaml'
+                        bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" apply -f k8s/configmap.yaml'
+                        bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" apply -f k8s/secret.yaml'
+                        bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" apply -f k8s/deployments.yaml'
+                        bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" apply -f k8s/services.yaml'
+                        bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" get pods -n itsm'
+                        bat '"C:\\Program Files\\Docker\\Docker\\resources\\bin\\kubectl.exe" get svc -n itsm'
                     }
                 }
             }
