@@ -62,5 +62,16 @@ pipeline {
                 }
             }
         }
+        stage('Cleanup') {
+            steps {
+                script {
+                    def svcs = ['auth-service', 'user-service', 'ticket-service', 'assignment-service', 'notifications-service', 'analytics-service', 'eureka-server']
+                    svcs.each { s ->
+                        bat "docker rmi acritsmac742.azurecr.io/itsm-${s}:latest"
+                    }
+                    bat 'docker image prune -f'
+                }
+            }
+        }
     }
 }
