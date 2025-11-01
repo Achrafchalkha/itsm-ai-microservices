@@ -19,8 +19,20 @@ echo.
 
 cd terraform
 
-REM Method: Using TF_CLI_ARGS environment variable
-echo Running: terraform plan with TF_CLI_ARGS
+REM Step 1: Initialize Terraform
+echo Step 1: Initializing Terraform...
+terraform.exe init
+
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Terraform init failed with exit code %ERRORLEVEL%
+    exit /b %ERRORLEVEL%
+) else (
+    echo SUCCESS: Terraform init completed
+)
+
+echo.
+REM Step 2: Plan with credentials
+echo Step 2: Running terraform plan with TF_CLI_ARGS
 set "TF_CLI_ARGS=-var=client_id=!CLIENT_ID! -var=client_secret=!CLIENT_SECRET!"
 terraform.exe plan -out=tfplan
 
@@ -32,7 +44,8 @@ if %ERRORLEVEL% NEQ 0 (
 )
 
 echo.
-echo Applying plan...
+REM Step 3: Apply the plan
+echo Step 3: Applying plan...
 terraform.exe apply -auto-approve tfplan
 
 if %ERRORLEVEL% NEQ 0 (
