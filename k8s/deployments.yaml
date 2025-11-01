@@ -1,0 +1,273 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eureka-server
+  namespace: itsm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: eureka-server
+  template:
+    metadata:
+      labels:
+        app: eureka-server
+    spec:
+      containers:
+      - name: eureka-server
+        image: acritsmac742.azurecr.io/itsm-eureka-server:latest
+        ports:
+        - containerPort: 8761
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: itsm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+    spec:
+      containers:
+      - name: auth-service
+        image: acritsmac742.azurecr.io/itsm-auth-service:latest
+        ports:
+        - containerPort: 8081
+        env:
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: POSTGRES_HOST
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
+        - name: EUREKA_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: EUREKA_SERVER_URL
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: itsm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-service
+  template:
+    metadata:
+      labels:
+        app: user-service
+    spec:
+      containers:
+      - name: user-service
+        image: acritsmac742.azurecr.io/itsm-user-service:latest
+        ports:
+        - containerPort: 8082
+        env:
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: POSTGRES_HOST
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
+        - name: EUREKA_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: EUREKA_SERVER_URL
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ticket-service
+  namespace: itsm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ticket-service
+  template:
+    metadata:
+      labels:
+        app: ticket-service
+    spec:
+      containers:
+      - name: ticket-service
+        image: acritsmac742.azurecr.io/itsm-ticket-service:latest
+        ports:
+        - containerPort: 8083
+        env:
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: POSTGRES_HOST
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
+        - name: EUREKA_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: EUREKA_SERVER_URL
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: assignment-service
+  namespace: itsm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: assignment-service
+  template:
+    metadata:
+      labels:
+        app: assignment-service
+    spec:
+      containers:
+      - name: assignment-service
+        image: acritsmac742.azurecr.io/itsm-assignment-service:latest
+        ports:
+        - containerPort: 8084
+        env:
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: POSTGRES_HOST
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
+        - name: EUREKA_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: EUREKA_SERVER_URL
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: notifications-service
+  namespace: itsm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: notifications-service
+  template:
+    metadata:
+      labels:
+        app: notifications-service
+    spec:
+      containers:
+      - name: notifications-service
+        image: acritsmac742.azurecr.io/itsm-notifications-service:latest
+        ports:
+        - containerPort: 8085
+        env:
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: POSTGRES_HOST
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
+        - name: EUREKA_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: EUREKA_SERVER_URL
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: analytics-service
+  namespace: itsm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: analytics-service
+  template:
+    metadata:
+      labels:
+        app: analytics-service
+    spec:
+      containers:
+      - name: analytics-service
+        image: acritsmac742.azurecr.io/itsm-analytics-service:latest
+        ports:
+        - containerPort: 8086
+        env:
+        - name: POSTGRES_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: POSTGRES_HOST
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
+        - name: EUREKA_SERVER_URL
+          valueFrom:
+            configMapKeyRef:
+              name: itsm-config
+              key: EUREKA_SERVER_URL

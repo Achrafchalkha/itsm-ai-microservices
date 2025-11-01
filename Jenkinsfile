@@ -73,5 +73,33 @@ pipeline {
                 }
             }
         }
+        stage('Terraform Infrastructure Provisioning') {
+            steps {
+                script {
+                    dir('terraform') {
+                        bat 'terraform init'
+                        bat 'terraform plan -out=tfplan'
+                        bat 'terraform apply -auto-approve tfplan'
+                    }
+                }
+            }
+        }
+        stage('Deploy to AKS') {
+            steps {
+                script {
+                    withCredentials([usernamePassword(credentialsId: 'acr-credentials', usernameVariable: 'ACR_USER', passwordVariable: 'ACR_PASS')]) {
+                        bat 'az aks get-credentials --resource-group rg-itsm-dev --name aks-itsm-dev --overwrite-existing'
+                        bat 'kubectl create secret docker-registry acr-secret --docker-server=acritsmac742.azurecr.io --docker-username=%ACR_USER% --docker-password=%ACR_PASS% --namespace=itsm --dry-run=client -o yaml | kubectl apply -f -'
+                        bat 'kubectl apply -f k8s/namespace.yaml'
+                        bat 'kubectl apply -f k8s/configmap.yaml'
+                        bat 'kubectl apply -f k8s/secret.yaml'
+                        bat 'kubectl apply -f k8s/deployments.yaml'
+                        bat 'kubectl apply -f k8s/services.yaml'
+                        bat 'kubectl get pods -n itsm'
+                        bat 'kubectl get svc -n itsm'
+                    }
+                }
+            }
+        }
     }
 }
