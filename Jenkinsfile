@@ -62,24 +62,13 @@ pipeline {
                 }
             }
         }
-        stage('Cleanup') {
-            steps {
-                script {
-                    def svcs = ['auth-service', 'user-service', 'ticket-service', 'assignment-service', 'notifications-service', 'analytics-service', 'eureka-server']
-                    svcs.each { s ->
-                        bat "docker rmi acritsmac742.azurecr.io/itsm-${s}:latest"
-                    }
-                    bat 'docker image prune -f'
-                }
-            }
-        }
         stage('Terraform Infrastructure Provisioning') {
             steps {
                 script {
                     dir('terraform') {
-                        bat 'terraform init'
-                        bat 'terraform plan -out=tfplan'
-                        bat 'terraform apply -auto-approve tfplan'
+                        bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe init'
+                        bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe plan -out=tfplan'
+                        bat 'C:\\Users\\LENOVO\\AppData\\Local\\Microsoft\\WinGet\\Links\\terraform.exe apply -auto-approve tfplan'
                     }
                 }
             }
