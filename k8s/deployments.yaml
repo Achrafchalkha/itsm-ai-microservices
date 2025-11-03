@@ -13,6 +13,10 @@ spec:
     metadata:
       labels:
         app: eureka-server
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8761"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
       - name: eureka-server
@@ -34,6 +38,10 @@ spec:
     metadata:
       labels:
         app: auth-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8081"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
       - name: auth-service
@@ -76,6 +84,10 @@ spec:
     metadata:
       labels:
         app: user-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8082"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
       - name: user-service
@@ -118,6 +130,10 @@ spec:
     metadata:
       labels:
         app: ticket-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8083"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
       - name: ticket-service
@@ -160,6 +176,10 @@ spec:
     metadata:
       labels:
         app: assignment-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8084"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
       - name: assignment-service
@@ -202,6 +222,10 @@ spec:
     metadata:
       labels:
         app: notifications-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8085"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
       - name: notifications-service
@@ -244,6 +268,10 @@ spec:
     metadata:
       labels:
         app: analytics-service
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8086"
+        prometheus.io/path: "/actuator/prometheus"
     spec:
       containers:
       - name: analytics-service

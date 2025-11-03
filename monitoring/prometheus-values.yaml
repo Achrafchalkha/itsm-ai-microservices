@@ -1,0 +1,52 @@
+# Prometheus Configuration
+prometheus:
+  prometheusSpec:
+    retention: 30d
+    storageSpec:
+      volumeClaimTemplate:
+        spec:
+          accessModes: ["ReadWriteOnce"]
+          resources:
+            requests:
+              storage: 10Gi
+    # Service Monitor selector to scrape Spring Boot apps
+    serviceMonitorSelector:
+      matchLabels:
+        app: itsm-microservice
+  
+  service:
+    type: LoadBalancer
+    port: 9090
+
+# Grafana Configuration
+grafana:
+  enabled: true
+  adminPassword: admin123
+  service:
+    type: LoadBalancer
+    port: 80
+  
+  # Pre-configure Prometheus as data source
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          url: http://prometheus-kube-prometheus-prometheus.monitoring:9090
+          access: proxy
+          isDefault: true
+
+# Alertmanager
+alertmanager:
+  enabled: true
+  service:
+    type: ClusterIP
+
+# Node Exporter - collects hardware metrics
+prometheus-node-exporter:
+  enabled: true
+
+# Kube State Metrics - collects Kubernetes metrics
+kube-state-metrics:
+  enabled: true
