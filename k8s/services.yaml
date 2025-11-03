@@ -5,13 +5,14 @@ metadata:
   name: eureka-server
   namespace: itsm
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: eureka-server
   ports:
   - name: http
     port: 8761
     targetPort: 8761
+    nodePort: 30761
     protocol: TCP
 ---
 apiVersion: v1
@@ -20,13 +21,14 @@ metadata:
   name: auth-service
   namespace: itsm
 spec:
-  type: LoadBalancer
+  type: NodePort
   selector:
     app: auth-service
   ports:
   - name: http
     port: 8081
     targetPort: 8081
+    nodePort: 30081
     protocol: TCP
 ---
 apiVersion: v1
