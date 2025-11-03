@@ -9,8 +9,10 @@ spec:
   selector:
     app: eureka-server
   ports:
-  - port: 8761
+  - name: http
+    port: 8761
     targetPort: 8761
+    protocol: TCP
 ---
 apiVersion: v1
 kind: Service
@@ -22,8 +24,10 @@ spec:
   selector:
     app: auth-service
   ports:
-  - port: 8081
+  - name: http
+    port: 8081
     targetPort: 8081
+    protocol: TCP
 ---
 apiVersion: v1
 kind: Service
@@ -31,12 +35,14 @@ metadata:
   name: user-service
   namespace: itsm
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: user-service
   ports:
-  - port: 8082
+  - name: http
+    port: 8082
     targetPort: 8082
+    protocol: TCP
 ---
 apiVersion: v1
 kind: Service
@@ -44,12 +50,14 @@ metadata:
   name: ticket-service
   namespace: itsm
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: ticket-service
   ports:
-  - port: 8083
+  - name: http
+    port: 8083
     targetPort: 8083
+    protocol: TCP
 ---
 apiVersion: v1
 kind: Service
@@ -57,12 +65,14 @@ metadata:
   name: assignment-service
   namespace: itsm
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: assignment-service
   ports:
-  - port: 8084
+  - name: http
+    port: 8084
     targetPort: 8084
+    protocol: TCP
 ---
 apiVersion: v1
 kind: Service
@@ -70,12 +80,14 @@ metadata:
   name: notifications-service
   namespace: itsm
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: notifications-service
   ports:
-  - port: 8085
+  - name: http
+    port: 8085
     targetPort: 8085
+    protocol: TCP
 ---
 apiVersion: v1
 kind: Service
@@ -83,9 +95,11 @@ metadata:
   name: analytics-service
   namespace: itsm
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: analytics-service
   ports:
-  - port: 8086
+  - name: http
+    port: 8086
     targetPort: 8086
+    protocol: TCP

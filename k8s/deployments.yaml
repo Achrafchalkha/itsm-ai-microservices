@@ -23,6 +23,30 @@ spec:
         image: acritsmac742.azurecr.io/itsm-eureka-server:latest
         ports:
         - containerPort: 8761
+          name: http
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8761
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8761
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -48,6 +72,7 @@ spec:
         image: acritsmac742.azurecr.io/itsm-auth-service:latest
         ports:
         - containerPort: 8081
+          name: http
         env:
         - name: POSTGRES_HOST
           valueFrom:
@@ -69,6 +94,29 @@ spec:
             configMapKeyRef:
               name: itsm-config
               key: EUREKA_SERVER_URL
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8081
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8081
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -94,6 +142,7 @@ spec:
         image: acritsmac742.azurecr.io/itsm-user-service:latest
         ports:
         - containerPort: 8082
+          name: http
         env:
         - name: POSTGRES_HOST
           valueFrom:
@@ -115,6 +164,29 @@ spec:
             configMapKeyRef:
               name: itsm-config
               key: EUREKA_SERVER_URL
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8082
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8082
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -140,6 +212,7 @@ spec:
         image: acritsmac742.azurecr.io/itsm-ticket-service:latest
         ports:
         - containerPort: 8083
+          name: http
         env:
         - name: POSTGRES_HOST
           valueFrom:
@@ -161,6 +234,29 @@ spec:
             configMapKeyRef:
               name: itsm-config
               key: EUREKA_SERVER_URL
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8083
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8083
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -186,6 +282,7 @@ spec:
         image: acritsmac742.azurecr.io/itsm-assignment-service:latest
         ports:
         - containerPort: 8084
+          name: http
         env:
         - name: POSTGRES_HOST
           valueFrom:
@@ -207,6 +304,29 @@ spec:
             configMapKeyRef:
               name: itsm-config
               key: EUREKA_SERVER_URL
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8084
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8084
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -232,6 +352,7 @@ spec:
         image: acritsmac742.azurecr.io/itsm-notifications-service:latest
         ports:
         - containerPort: 8085
+          name: http
         env:
         - name: POSTGRES_HOST
           valueFrom:
@@ -253,6 +374,29 @@ spec:
             configMapKeyRef:
               name: itsm-config
               key: EUREKA_SERVER_URL
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8085
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8085
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -278,6 +422,7 @@ spec:
         image: acritsmac742.azurecr.io/itsm-analytics-service:latest
         ports:
         - containerPort: 8086
+          name: http
         env:
         - name: POSTGRES_HOST
           valueFrom:
@@ -299,3 +444,26 @@ spec:
             configMapKeyRef:
               name: itsm-config
               key: EUREKA_SERVER_URL
+        livenessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8086
+          initialDelaySeconds: 90
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /actuator/health
+            port: 8086
+          initialDelaySeconds: 60
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
