@@ -1,0 +1,119 @@
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: itsm-microservices
+  namespace: itsm
+  labels:
+    app: itsm-microservice
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: eureka-server
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: auth-service-monitor
+  namespace: itsm
+  labels:
+    app: itsm-microservice
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: auth-service
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: user-service-monitor
+  namespace: itsm
+  labels:
+    app: itsm-microservice
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: user-service
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ticket-service-monitor
+  namespace: itsm
+  labels:
+    app: itsm-microservice
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: ticket-service
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: assignment-service-monitor
+  namespace: itsm
+  labels:
+    app: itsm-microservice
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: assignment-service
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: notifications-service-monitor
+  namespace: itsm
+  labels:
+    app: itsm-microservice
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: notifications-service
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: analytics-service-monitor
+  namespace: itsm
+  labels:
+    app: itsm-microservice
+    release: prometheus
+spec:
+  selector:
+    matchLabels:
+      app: analytics-service
+  endpoints:
+  - port: http
+    path: /actuator/prometheus
+    interval: 30s

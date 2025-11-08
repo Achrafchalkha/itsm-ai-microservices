@@ -34,6 +34,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                                   HttpServletResponse response, 
                                   FilterChain filterChain) throws ServletException, IOException {
         
+        // Skip JWT validation for actuator endpoints
+        String path = request.getRequestURI();
+        if (path.startsWith("/actuator/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+        
         String token = extractTokenFromRequest(request);
         
         if (token != null && validateToken(token)) {

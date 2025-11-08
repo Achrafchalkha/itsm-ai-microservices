@@ -38,8 +38,8 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(authz -> authz
-                // Public endpoints
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+                // Public endpoints - allow actuator endpoints for monitoring
+                .requestMatchers("/actuator/**").permitAll()
                 
                 // Assignment endpoints - require authentication
                 .requestMatchers("/api/assignments/**").authenticated()

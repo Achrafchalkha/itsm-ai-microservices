@@ -79,12 +79,14 @@ spec:
             configMapKeyRef:
               name: itsm-config
               key: POSTGRES_HOST
-        - name: POSTGRES_USER
+        - name: DB_URL
+          value: "jdbc:postgresql://psqlitsmac742.postgres.database.azure.com:5432/auth_db"
+        - name: DB_USERNAME
           valueFrom:
             secretKeyRef:
               name: itsm-secret
               key: POSTGRES_USER
-        - name: POSTGRES_PASSWORD
+        - name: DB_PASSWORD
           valueFrom:
             secretKeyRef:
               name: itsm-secret
@@ -144,21 +146,23 @@ spec:
         - containerPort: 8082
           name: http
         env:
+        - name: DB_URL
+          value: "jdbc:postgresql://psqlitsmac742.postgres.database.azure.com:5432/user_db"
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
         - name: POSTGRES_HOST
           valueFrom:
             configMapKeyRef:
               name: itsm-config
               key: POSTGRES_HOST
-        - name: POSTGRES_USER
-          valueFrom:
-            secretKeyRef:
-              name: itsm-secret
-              key: POSTGRES_USER
-        - name: POSTGRES_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: itsm-secret
-              key: POSTGRES_PASSWORD
         - name: EUREKA_SERVER_URL
           valueFrom:
             configMapKeyRef:
@@ -214,6 +218,18 @@ spec:
         - containerPort: 8083
           name: http
         env:
+        - name: DB_URL
+          value: "jdbc:postgresql://psqlitsmac742.postgres.database.azure.com:5432/ticket_db"
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
         - name: POSTGRES_HOST
           valueFrom:
             configMapKeyRef:
@@ -284,6 +300,18 @@ spec:
         - containerPort: 8084
           name: http
         env:
+        - name: DB_URL
+          value: "jdbc:postgresql://psqlitsmac742.postgres.database.azure.com:5432/assignment_db"
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
         - name: POSTGRES_HOST
           valueFrom:
             configMapKeyRef:
@@ -354,6 +382,18 @@ spec:
         - containerPort: 8085
           name: http
         env:
+        - name: DB_URL
+          value: "jdbc:postgresql://psqlitsmac742.postgres.database.azure.com:5432/notifications_db"
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
         - name: POSTGRES_HOST
           valueFrom:
             configMapKeyRef:
@@ -424,6 +464,18 @@ spec:
         - containerPort: 8086
           name: http
         env:
+        - name: DB_URL
+          value: "jdbc:postgresql://psqlitsmac742.postgres.database.azure.com:5432/analytics_db"
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: itsm-secret
+              key: POSTGRES_PASSWORD
         - name: POSTGRES_HOST
           valueFrom:
             configMapKeyRef:
@@ -467,3 +519,4 @@ spec:
           limits:
             memory: "1Gi"
             cpu: "500m"
+

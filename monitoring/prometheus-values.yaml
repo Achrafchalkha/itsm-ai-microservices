@@ -26,6 +26,13 @@ grafana:
     type: LoadBalancer
     port: 80
   
+  # Disable default datasource and plugins to avoid conflicts
+  sidecar:
+    datasources:
+      enabled: false
+    dashboards:
+      enabled: true
+  
   # Pre-configure Prometheus as data source
   datasources:
     datasources.yaml:
@@ -36,6 +43,7 @@ grafana:
           url: http://prometheus-kube-prometheus-prometheus.monitoring:9090
           access: proxy
           isDefault: true
+          editable: false
 
 # Alertmanager
 alertmanager:
